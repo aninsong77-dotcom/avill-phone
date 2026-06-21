@@ -1,0 +1,18 @@
+{
+  "name": "아빌라 관리",
+  "short_name": "아빌라",
+  "description": "아빌라 건물 관리 앱",
+  "start_url": "/avill-phone/",
+  "display": "standalone",
+  "background_color": "#15224a",
+  "theme_color": "#15224a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
