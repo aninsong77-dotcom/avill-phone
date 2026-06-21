@@ -17,17 +17,18 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+svg.ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;flex:none}
 header{background:#15224a;color:#fff;padding:14px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between}
-header h1{font-size:16px;font-weight:600}
-#syncStatus{font-size:11px;opacity:.7}
+header h1{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+#syncStatus{font-size:11px;opacity:.7;display:flex;align-items:center;gap:4px}
 .tab-bar{display:flex;background:var(--surface);border-bottom:2px solid var(--border);position:sticky;top:52px;z-index:99}
-.tab-btn{flex:1;padding:12px 0;font-size:13px;font-weight:500;color:var(--text2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab-btn{flex:1;padding:12px 0;font-size:13px;font-weight:500;color:var(--text2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;display:flex;align-items:center;justify-content:center;gap:5px}
 .tab-btn.on{color:#15224a;border-bottom-color:#15224a;font-weight:700}
 .page{display:none;padding:14px}
 .page.on{display:block}
-.floor-label{font-size:12px;font-weight:700;color:var(--text2);padding:7px 10px;background:var(--surface);border-radius:6px;margin-bottom:8px;display:flex;justify-content:space-between}
+.floor-label{font-size:12px;font-weight:700;color:var(--text2);padding:7px 10px;background:var(--surface);border-radius:6px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
 .room-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
-.room-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:all .15s;position:relative}
+.room-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:all .15s}
 .room-card.paid{background:var(--green-bg);border-color:var(--green-bd)}
 .room-card.unpaid{background:var(--amber-bg);border-color:var(--amber-bd)}
 .room-card.overdue{background:var(--red-bg);border-color:var(--red-bd)}
@@ -35,7 +36,7 @@ header h1{font-size:16px;font-weight:600}
 .room-no{font-size:15px;font-weight:700;margin-bottom:2px}
 .room-name{font-size:12px;color:var(--text2);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .room-rent{font-size:11px;font-weight:500;color:var(--text2)}
-.room-status{font-size:11px;font-weight:600;margin-top:4px}
+.room-status{font-size:11px;font-weight:600;margin-top:4px;display:flex;align-items:center;gap:3px}
 .room-card.paid .room-status{color:var(--green)}
 .room-card.unpaid .room-status{color:var(--amber)}
 .room-card.overdue .room-status{color:var(--red)}
@@ -47,44 +48,66 @@ header h1{font-size:16px;font-weight:600}
 .modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-height:88vh;overflow-y:auto;padding:20px 16px 32px}
 .modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
 .modal-title{font-size:17px;font-weight:700;margin-bottom:14px}
-.info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
 .info-row:last-child{border-bottom:none}
-.info-lbl{color:var(--text2);font-size:12px}
+.info-lbl{color:var(--text2);font-size:12px;display:flex;align-items:center;gap:4px}
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
-.bg{background:var(--green-bg);color:var(--green)}.ba{background:var(--amber-bg);color:var(--amber)}.br{background:var(--red-bg);color:var(--red)}
+.bg{background:var(--green-bg);color:var(--green)}.ba{background:var(--amber-bg);color:var(--amber)}.br{background:var(--red-bg);color:var(--red)}.bb{background:var(--blue-bg);color:var(--blue)}.bk{background:var(--bg);color:var(--text2)}
 .req-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
 .req-top{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
 .req-room{font-weight:700;font-size:13px}
 .req-date{font-size:11px;color:var(--text3)}
 .req-content{font-size:13px;line-height:1.5}
-.req-feedback{font-size:12px;color:var(--text2);background:var(--bg);border-radius:6px;padding:7px 9px;margin-top:6px}
-.sched-row{display:flex;gap:10px;padding:10px;background:var(--surface);border-radius:10px;margin-bottom:8px;border:1px solid var(--border);align-items:flex-start}
-.sched-date{font-size:12px;font-weight:700;color:var(--text2);min-width:60px}
+.req-feedback{font-size:12px;color:var(--text2);background:var(--bg);border-radius:6px;padding:7px 9px;margin-top:6px;display:flex;gap:6px;align-items:flex-start}
+.sched-row{display:flex;gap:10px;padding:10px 12px;background:var(--surface);border-radius:10px;margin-bottom:8px;border:1px solid var(--border);align-items:center}
+.sched-date{font-size:12px;font-weight:700;color:var(--text2);min-width:68px}
 .sched-info{flex:1}
 .sched-title{font-size:13px;font-weight:600}
 .sched-room{font-size:11px;color:var(--text3);margin-top:2px}
-.section-title{font-size:13px;font-weight:700;color:var(--text2);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.04em}
+.section-title{font-size:12px;font-weight:700;color:var(--text2);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:5px}
 .empty{text-align:center;color:var(--text3);padding:32px 0;font-size:13px}
-.shortage-txt{font-size:10px;color:var(--red);margin-top:2px}
+.shortage-txt{font-size:10px;color:var(--red);margin-top:2px;display:flex;align-items:center;gap:2px}
 .loading{text-align:center;padding:48px;color:var(--text3)}
 .filter-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
 .filter-btn{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:12px;cursor:pointer;color:var(--text2)}
 .filter-btn.on{background:#15224a;color:#fff;border-color:#15224a}
+.phone-link{color:var(--blue);text-decoration:none;display:flex;align-items:center;gap:4px;font-weight:500}
+.phone-link:hover{text-decoration:underline}
+.info-box{background:var(--bg);border-radius:10px;padding:12px;margin-bottom:14px}
 </style>
+<!-- SVG 아이콘 스프라이트 -->
+<svg style="display:none">
+  <symbol id="ic-building" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="ic-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="ic-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
+  <symbol id="ic-home" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+  <symbol id="ic-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  <symbol id="ic-msg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="ic-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+  <symbol id="ic-tool" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="ic-sync" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+  <symbol id="ic-request" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
+  <symbol id="ic-broom" viewBox="0 0 24 24"><path d="M3 21v-4a4 4 0 0 1 4-4h14"/><path d="m21 3-8.5 8.5"/><path d="m16 8 4-4"/></symbol>
+</svg>
 </head>
 <body>
 <header>
-  <h1>🏢 아빌라 관리</h1>
-  <span id="syncStatus">불러오는 중...</span>
+  <h1><svg class="ic" style="width:18px;height:18px;stroke:#fff"><use href="#ic-building"/></svg>아빌라 관리</h1>
+  <span id="syncStatus"><svg class="ic" style="stroke:#fff;opacity:.7"><use href="#ic-sync"/></svg></span>
 </header>
 
 <div class="tab-bar">
-  <button class="tab-btn on" onclick="switchTab('rooms',this)">호실 현황</button>
-  <button class="tab-btn" onclick="switchTab('requests',this)">요청/일정</button>
+  <button class="tab-btn on" onclick="switchTab('rooms',this)">
+    <svg class="ic"><use href="#ic-home"/></svg>호실 현황
+  </button>
+  <button class="tab-btn" onclick="switchTab('requests',this)">
+    <svg class="ic"><use href="#ic-request"/></svg>요청/일정
+  </button>
 </div>
 
 <div class="page on" id="tab-rooms">
-  <div id="roomsBody"><div class="loading">데이터 불러오는 중...</div></div>
+  <div id="roomsBody"><div class="loading">연결 중...</div></div>
 </div>
 
 <div class="page" id="tab-requests">
@@ -94,8 +117,8 @@ header h1{font-size:16px;font-weight:600}
     <button class="filter-btn" onclick="filterReqs('진행중',this)">진행중</button>
     <button class="filter-btn" onclick="filterReqs('완료',this)">완료</button>
   </div>
-  <div id="reqsBody"><div class="loading">데이터 불러오는 중...</div></div>
-  <div class="section-title">📅 일정</div>
+  <div id="reqsBody"><div class="loading">연결 중...</div></div>
+  <div class="section-title"><svg class="ic"><use href="#ic-calendar"/></svg>일정</div>
   <div id="schedsBody"></div>
 </div>
 
@@ -131,16 +154,26 @@ let _reqFilter = '전체';
 const fmt = n => Number(n||0).toLocaleString('ko-KR') + '원';
 const fmtS = n => { n=Number(n||0); if(n>=10000) return Math.round(n/10000)+'만원'; return fmt(n); };
 
+function setSyncStatus(text, ok) {
+  const el = document.getElementById('syncStatus');
+  el.innerHTML = `<svg class="ic" style="stroke:#fff;opacity:.7"><use href="#ic-sync"/></svg><span style="opacity:.7">${text}</span>`;
+}
+
 db.collection('building').doc('phone_data').onSnapshot(doc => {
-  if (!doc.exists) { document.getElementById('syncStatus').textContent = '데이터 없음'; return; }
+  if (!doc.exists) {
+    setSyncStatus('데이터 없음');
+    document.getElementById('roomsBody').innerHTML = '<div class="loading" style="color:var(--red)">노트북 앱을 열어주세요</div>';
+    return;
+  }
   _data = doc.data();
   const t = _data.updatedAt?.toDate?.();
   const timeStr = t ? `${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')} 업데이트` : '동기화됨';
-  document.getElementById('syncStatus').textContent = timeStr;
+  setSyncStatus(timeStr);
   renderRooms();
   renderRequests();
 }, err => {
-  document.getElementById('syncStatus').textContent = '연결 오류';
+  setSyncStatus('연결 오류');
+  document.getElementById('roomsBody').innerHTML = `<div class="loading" style="color:var(--red)">연결 오류: ${err.message}</div>`;
 });
 
 db.collection('building').doc('cleaning').onSnapshot(doc => {
@@ -159,6 +192,14 @@ function switchTab(tab, el) {
   document.getElementById('tab-'+tab).classList.add('on');
 }
 
+const STATUS_ICON = {
+  paid: `<svg class="ic" style="width:12px;height:12px;stroke:var(--green)"><use href="#ic-check"/></svg>`,
+  unpaid: `<svg class="ic" style="width:12px;height:12px;stroke:var(--amber)"><use href="#ic-clock"/></svg>`,
+  overdue: `<svg class="ic" style="width:12px;height:12px;stroke:var(--red)"><use href="#ic-alert"/></svg>`,
+  vacant: `<svg class="ic" style="width:12px;height:12px;stroke:var(--text3)"><use href="#ic-home"/></svg>`,
+};
+const STATUS_TXT = {paid:'납부완료', unpaid:'미납', overdue:'연체', vacant:'공실'};
+
 function renderRooms() {
   if (!_data || !_data.rooms) return;
   const roomMap = {};
@@ -167,19 +208,20 @@ function renderRooms() {
   FLOORS.forEach(f => {
     const occupied = f.rooms.filter(r => roomMap[r] && roomMap[r].status !== 'vacant').length;
     const paid = f.rooms.filter(r => roomMap[r] && roomMap[r].status === 'paid').length;
-    html += `<div class="floor-label"><span>${f.label}</span><span>${paid}/${occupied} 납부</span></div><div class="room-grid">`;
+    html += `<div class="floor-label"><span>${f.label}</span><span style="font-size:11px">${paid}/${occupied} 납부</span></div><div class="room-grid">`;
     f.rooms.forEach(r => {
       const d = roomMap[r] || { room: r, status: 'vacant', tenantName: '', rent: 0, cleaning: false };
-      const stTxt = {paid:'✓ 납부완료', unpaid:'⏳ 미납', overdue:'🔴 연체', vacant:'공실'}[d.status] || '';
-      const shortageHtml = d.shortage > 0 ? `<div class="shortage-txt">미납 ${fmtS(d.shortage)}</div>` : '';
+      const shortageHtml = d.shortage > 0
+        ? `<div class="shortage-txt"><svg class="ic" style="width:10px;height:10px;stroke:var(--red)"><use href="#ic-alert"/></svg>${fmtS(d.shortage)}</div>` : '';
       html += `<div class="room-card ${d.status}" onclick="openRoom('${r}')">
         <div class="room-no">${r}</div>
         <div class="room-name">${d.tenantName || (d.status === 'vacant' ? '공실' : '-')}</div>
         <div class="room-rent">${d.rent ? fmtS(d.rent) : '-'}</div>
-        <div class="room-status">${stTxt}</div>
+        <div class="room-status">${STATUS_ICON[d.status]||''}${STATUS_TXT[d.status]||''}</div>
         ${shortageHtml}
         <label class="clean-label" onclick="event.stopPropagation()">
-          <input type="checkbox" ${d.cleaning ? 'checked' : ''} onchange="toggleCleaning('${r}',this.checked)">청소완료
+          <input type="checkbox" ${d.cleaning ? 'checked' : ''} onchange="toggleCleaning('${r}',this.checked)">
+          <svg class="ic" style="width:12px;height:12px"><use href="#ic-broom"/></svg>청소완료
         </label>
       </div>`;
     });
@@ -192,40 +234,78 @@ function openRoom(room) {
   if (!_data || !_data.rooms) return;
   const d = _data.rooms.find(r => r.room === room);
   if (!d) return;
-  const stBadge = {paid:`<span class="badge bg">✓ 납부완료</span>`, unpaid:`<span class="badge ba">미납</span>`, overdue:`<span class="badge br">연체</span>`, vacant:''}[d.status] || '';
+
+  const stBadge = {
+    paid: `<span class="badge bg"><svg class="ic" style="width:11px;height:11px;stroke:var(--green)"><use href="#ic-check"/></svg> 납부완료</span>`,
+    unpaid: `<span class="badge ba">미납</span>`,
+    overdue: `<span class="badge br">연체</span>`,
+    vacant: ''
+  }[d.status] || '';
+
   const reqs = (_data.requests || []).filter(r => r.room === room).sort((a,b) => (b.date||'').localeCompare(a.date||''));
   const statusColors = {접수:'ba',진행중:'ba',완료:'bg'};
+  const catColors = {수리:'br',민원:'ba',시설:'bb',기타:'bk'};
+
+  const phoneHtml = d.phone
+    ? `<a class="phone-link" href="tel:${d.phone}"><svg class="ic" style="stroke:var(--blue)"><use href="#ic-phone"/></svg>${d.phone}</a>`
+    : '<span style="color:var(--text3)">미등록</span>';
+
   const reqHtml = reqs.length ? reqs.map(r => `
     <div style="background:var(--bg);border-radius:8px;padding:9px 10px;margin-bottom:7px">
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+        <span class="badge ${catColors[r.cat]||'bk'}">${r.cat||''}</span>
         <span class="badge ${statusColors[r.status]||'ba'}">${r.status}</span>
         <span style="font-size:11px;color:var(--text3)">${r.date||''}</span>
       </div>
       <div style="font-size:13px">${r.content}</div>
-      ${r.feedback ? `<div style="font-size:12px;color:var(--text2);margin-top:5px;padding:6px 8px;background:var(--surface);border-radius:6px">💬 ${r.feedback}</div>` : ''}
-    </div>`).join('') : '<div style="font-size:12px;color:var(--text3);padding:6px 0">요청사항 없음</div>';
+      ${r.feedback ? `<div class="req-feedback"><svg class="ic" style="width:13px;height:13px;flex:none;margin-top:1px"><use href="#ic-msg"/></svg>${r.feedback}</div>` : ''}
+    </div>`).join('')
+    : '<div style="font-size:12px;color:var(--text3);padding:6px 0">요청사항 없음</div>';
 
   document.getElementById('roomModalContent').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
-      <div><div class="modal-title" style="margin-bottom:4px">${room}</div><div style="font-size:15px;font-weight:600">${d.tenantName||'공실'}</div></div>
-      <div>${stBadge}${d.shortage > 0 ? `<div style="font-size:12px;color:var(--red);margin-top:4px">미납 ${fmt(d.shortage)}</div>` : ''}</div>
+      <div>
+        <div class="modal-title" style="margin-bottom:4px">${room}</div>
+        <div style="font-size:15px;font-weight:600">${d.tenantName||'공실'}</div>
+      </div>
+      <div style="text-align:right">
+        ${stBadge}
+        ${d.shortage > 0 ? `<div style="font-size:12px;color:var(--red);margin-top:4px;display:flex;align-items:center;gap:3px;justify-content:flex-end"><svg class="ic" style="width:12px;height:12px;stroke:var(--red)"><use href="#ic-alert"/></svg>${fmt(d.shortage)}</div>` : ''}
+      </div>
     </div>
-    <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:14px">
-      <div class="info-row"><span class="info-lbl">전화번호</span><span>${d.phone||'-'}</span></div>
-      <div class="info-row"><span class="info-lbl">월세</span><span>${d.rent ? fmt(d.rent) : '-'}</span></div>
-      <div class="info-row"><span class="info-lbl">보증금</span><span>${d.deposit ? fmt(d.deposit) : '-'}</span></div>
-      <div class="info-row"><span class="info-lbl">입주일</span><span>${d.moveIn||'-'}</span></div>
-      <div class="info-row"><span class="info-lbl">계약종료일</span><span>${d.leaseEnd||'-'}</span></div>
+    <div class="info-box">
+      <div class="info-row">
+        <span class="info-lbl"><svg class="ic" style="width:13px;height:13px"><use href="#ic-phone"/></svg>전화번호</span>
+        ${phoneHtml}
+      </div>
+      <div class="info-row">
+        <span class="info-lbl">월세</span>
+        <span>${d.rent ? fmt(d.rent) : '-'}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-lbl">보증금</span>
+        <span>${d.deposit ? fmt(d.deposit) : '-'}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-lbl"><svg class="ic" style="width:13px;height:13px"><use href="#ic-calendar"/></svg>입주일</span>
+        <span>${d.moveIn||'-'}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-lbl"><svg class="ic" style="width:13px;height:13px"><use href="#ic-calendar"/></svg>계약종료일</span>
+        <span>${d.leaseEnd||'-'}</span>
+      </div>
       ${d.memo ? `<div class="info-row"><span class="info-lbl">메모</span><span style="font-size:12px">${d.memo}</span></div>` : ''}
     </div>
-    <div class="section-title">요청사항</div>
+    <div class="section-title"><svg class="ic"><use href="#ic-request"/></svg>요청사항</div>
     ${reqHtml}
   `;
   document.getElementById('roomModal').classList.add('open');
 }
 
 function closeRoomModal(e) {
-  if (e.target === document.getElementById('roomModal')) document.getElementById('roomModal').classList.remove('open');
+  if (e.target === document.getElementById('roomModal')) {
+    document.getElementById('roomModal').classList.remove('open');
+  }
 }
 
 async function toggleCleaning(room, checked) {
@@ -250,6 +330,7 @@ function renderRequests() {
   if (_reqFilter !== '전체') reqs = reqs.filter(r => r.status === _reqFilter);
   const statusColors = {접수:'ba',진행중:'ba',완료:'bg'};
   const catColors = {수리:'br',민원:'ba',시설:'bb',기타:'bk'};
+
   document.getElementById('reqsBody').innerHTML = reqs.length
     ? reqs.map(r => `<div class="req-card">
         <div class="req-top">
@@ -259,7 +340,7 @@ function renderRequests() {
           <span class="req-date">${r.date||''}</span>
         </div>
         <div class="req-content">${r.content}</div>
-        ${r.feedback ? `<div class="req-feedback">💬 ${r.feedback}</div>` : ''}
+        ${r.feedback ? `<div class="req-feedback"><svg class="ic" style="width:13px;height:13px;flex:none;margin-top:1px"><use href="#ic-msg"/></svg>${r.feedback}</div>` : ''}
       </div>`).join('')
     : '<div class="empty">요청사항이 없습니다</div>';
 
@@ -268,7 +349,7 @@ function renderRequests() {
   document.getElementById('schedsBody').innerHTML = scheds.length
     ? scheds.map(s => {
         const past = s.date < today;
-        return `<div class="sched-row" style="${past ? 'opacity:.55' : ''}">
+        return `<div class="sched-row" style="${past?'opacity:.5':''}">
           <div class="sched-date">${s.date||''}</div>
           <div class="sched-info">
             <div class="sched-title">${s.title}</div>
