@@ -81,8 +81,7 @@ header h1{font-size:16px;font-weight:600}
 <div class="tab-bar">
   <button class="tab-btn on" onclick="switchTab('rooms',this)">호실 현황</button>
   <button class="tab-btn" onclick="switchTab('requests',this)">요청/일정</button>
-  <button class="tab-btn" onclick="switchTab('sms',this)">💬 문자</button>
-  <button class="tab-btn" onclick="switchTab('realty',this)">부동산</button>
+  <button class="tab-btn" onclick="switchTab('notice',this)">공지</button>
 </div>
 
 <div class="page on" id="tab-rooms">
@@ -101,12 +100,8 @@ header h1{font-size:16px;font-weight:600}
   <div id="schedsBody"></div>
 </div>
 
-<div class="page" id="tab-sms">
-  <div id="smsBody"><div class="loading">데이터 불러오는 중...</div></div>
-</div>
-
-<div class="page" id="tab-realty">
-  <div id="realtyBody"><div class="loading">데이터 불러오는 중...</div></div>
+<div class="page" id="tab-notice">
+  <div id="noticeBody"><div class="loading">데이터 불러오는 중...</div></div>
 </div>
 
 <!-- 호실 상세 모달 -->
@@ -149,8 +144,7 @@ db.collection('building').doc('phone_data').onSnapshot(doc => {
   document.getElementById('syncStatus').textContent = timeStr;
   renderRooms();
   renderRequests();
-  renderSms();
-  renderRealty();
+  renderNotice();
 }, err => {
   document.getElementById('syncStatus').textContent = '연결 오류';
 });
@@ -291,55 +285,6 @@ function renderRequests() {
     : '<div class="empty">일정이 없습니다</div>';
 }
 
-function renderSms() {
-  if (!_data) return;
-  const rooms = _data.rooms || [];
-  const unpaid = rooms.filter(r => r.status === 'unpaid' && r.tenantName);
-  const overdue = rooms.filter(r => r.status === 'overdue' && r.tenantName);
-  const month = new Date().getMonth() + 1;
-  const fmt = n => Number(n||0).toLocaleString('ko-KR');
-
-  if (!unpaid.length && !overdue.length) {
-    document.getElementById('smsBody').innerHTML = '<div class="empty">미납·연체 세입자가 없습니다 🎉</div>';
-    return;
-  }
-
-  const card = (r, type) => {
-    const bg = type === 'overdue'
-      ? 'background:var(--red-bg);border-color:var(--red-bd)'
-      : 'background:var(--amber-bg);border-color:var(--amber-bd)';
-    const badge = type === 'overdue'
-      ? `<span class="badge br">연체</span>`
-      : `<span class="badge ba">미납</span>`;
-    const msgLines = type === 'overdue'
-      ? `안녕하세요 ${r.tenantName}님,\n${r.room}호 월세가 ${month}월까지 연체되어 있습니다.\n누적 미납금: ${fmt(r.shortage)}원\n빠른 납부 부탁드립니다.`
-      : `안녕하세요 ${r.tenantName}님,\n${r.room}호 ${month}월 월세가 미납되어 있습니다.\n미납금: ${fmt(r.shortage)}원\n납부 부탁드립니다.`;
-    const msgId = 'msg_' + r.room.replace(/[^a-zA-Z0-9]/g,'_');
-    return `<div class="req-card" style="${bg}">
-      <div class="req-top">
-        <span class="req-room">${r.room}</span>
-        <span style="font-size:13px;font-weight:600">${r.tenantName}</span>
-        ${badge}
-        ${r.shortage > 0 ? `<span style="font-size:11px;color:var(--red);font-weight:600">미납 ${fmt(r.shortage)}원</span>` : ''}
-      </div>
-      ${r.phone ? `<div style="font-size:12px;color:var(--text2);margin-bottom:6px">📞 ${r.phone}</div>` : '<div style="font-size:12px;color:var(--red);margin-bottom:6px">번호 없음</div>'}
-      <textarea id="${msgId}" readonly style="width:100%;font-size:12px;line-height:1.7;border:1px solid var(--border);border-radius:6px;padding:8px;background:#fff;color:var(--text);resize:none;height:90px">${msgLines}</textarea>
-      <button onclick="copyMsg('${msgId}')" style="margin-top:6px;width:100%;padding:9px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">📋 복사</button>
-    </div>`;
-  };
-
-  let html = '';
-  if (overdue.length) {
-    html += `<div class="section-title" style="color:var(--red)">🔴 연체 (${overdue.length}명)</div>`;
-    html += overdue.map(r => card(r, 'overdue')).join('');
-  }
-  if (unpaid.length) {
-    html += `<div class="section-title" style="color:var(--amber)">⏳ 미납 (${unpaid.length}명)</div>`;
-    html += unpaid.map(r => card(r, 'unpaid')).join('');
-  }
-  document.getElementById('smsBody').innerHTML = html;
-}
-
 function copyMsg(id) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -348,27 +293,59 @@ function copyMsg(id) {
   } else { el.select(); document.execCommand('copy'); alert('복사됐습니다!'); }
 }
 
-function renderRealty() {
+function renderNotice() {
   if (!_data) return;
+  const rooms = _data.rooms || [];
   const vacancies = _data.vacancies || [];
-  const moveOuts  = (_data.moveOuts || []).sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  const moveOuts = (_data.moveOuts || []).sort((a,b) => (a.date||'').localeCompare(b.date||''));
   const today = new Date().toISOString().slice(0,10);
+  const month = new Date().getMonth() + 1;
+  const fmtN = n => Number(n||0).toLocaleString('ko-KR');
   let html = '';
 
-  // 공실 목록
-  html += `<div class="section-title">🏠 현재 공실 (${vacancies.length}실)</div>`;
+  // ── 1. 미납/연체 문자 ──
+  const overdue = rooms.filter(r => r.status === 'overdue' && r.tenantName);
+  const unpaid  = rooms.filter(r => r.status === 'unpaid'  && r.tenantName);
+
+  html += `<div class="section-title" style="color:var(--red)">💬 미납·연체 문자</div>`;
+  if (!overdue.length && !unpaid.length) {
+    html += '<div class="empty" style="padding:16px 0">미납·연체 세입자 없음 🎉</div>';
+  } else {
+    const smsCard = (r, type) => {
+      const bg = type === 'overdue' ? 'background:var(--red-bg);border-color:var(--red-bd)' : 'background:var(--amber-bg);border-color:var(--amber-bd)';
+      const badge = type === 'overdue' ? `<span class="badge br">연체</span>` : `<span class="badge ba">미납</span>`;
+      const msg = type === 'overdue'
+        ? `안녕하세요 ${r.tenantName}님,\n${r.room}호 월세가 ${month}월까지 연체되어 있습니다.\n누적 미납금: ${fmtN(r.shortage)}원\n빠른 납부 부탁드립니다.`
+        : `안녕하세요 ${r.tenantName}님,\n${r.room}호 ${month}월 월세가 미납되어 있습니다.\n미납금: ${fmtN(r.shortage)}원\n납부 부탁드립니다.`;
+      const mid = 'msg_' + r.room.replace(/[^a-zA-Z0-9]/g,'_');
+      return `<div class="req-card" style="${bg};margin-bottom:10px">
+        <div class="req-top">
+          <span class="req-room">${r.room}</span>
+          <span style="font-size:13px;font-weight:600">${r.tenantName}</span>
+          ${badge}
+          ${r.shortage > 0 ? `<span style="font-size:11px;color:var(--red);font-weight:600">${fmtN(r.shortage)}원</span>` : ''}
+        </div>
+        ${r.phone ? `<div style="font-size:12px;color:var(--text2);margin-bottom:6px">📞 ${r.phone}</div>` : '<div style="font-size:12px;color:var(--red);margin-bottom:6px">번호 없음</div>'}
+        <textarea id="${mid}" readonly style="width:100%;font-size:12px;line-height:1.7;border:1px solid var(--border);border-radius:6px;padding:8px;background:#fff;color:var(--text);resize:none;height:90px">${msg}</textarea>
+        <button onclick="copyMsg('${mid}')" style="margin-top:6px;width:100%;padding:9px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">📋 복사</button>
+      </div>`;
+    };
+    if (overdue.length) html += overdue.map(r => smsCard(r,'overdue')).join('');
+    if (unpaid.length)  html += unpaid.map(r => smsCard(r,'unpaid')).join('');
+  }
+
+  // ── 2. 부동산 공지 문자 ──
+  html += `<div class="section-title" style="margin-top:20px;color:var(--blue)">🏠 부동산 공지 문자</div>`;
+
+  // 공실 카드 목록
   if (vacancies.length === 0) {
-    html += '<div class="empty">현재 공실 없음 🎉</div>';
+    html += '<div class="empty" style="padding:12px 0">현재 공실 없음 🎉</div>';
   } else {
     const byFloor = {};
-    vacancies.forEach(v => {
-      const fl = v.room[0]+'층';
-      if (!byFloor[fl]) byFloor[fl] = [];
-      byFloor[fl].push(v);
-    });
-    Object.entries(byFloor).sort().forEach(([fl, rooms]) => {
-      html += `<div class="floor-label">${fl}</div><div class="room-grid">`;
-      rooms.forEach(v => {
+    vacancies.forEach(v => { const fl=v.room[0]+'층'; if(!byFloor[fl]) byFloor[fl]=[]; byFloor[fl].push(v); });
+    Object.entries(byFloor).sort().forEach(([fl,rs]) => {
+      html += `<div class="floor-label">${fl}</div><div class="room-grid" style="margin-bottom:10px">`;
+      rs.forEach(v => {
         const line1 = (v.dep1||v.rent1) ? `보${v.dep1}/월${v.rent1}` : '미설정';
         const line2 = (v.dep2||v.rent2) ? `보${v.dep2}/월${v.rent2}` : '';
         html += `<div class="room-card vacant" style="opacity:1">
@@ -389,20 +366,16 @@ function renderRealty() {
       const diff = Math.round((new Date(m.date) - new Date(today)) / 86400000);
       const label = diff < 0 ? `${Math.abs(diff)}일 지남` : diff === 0 ? '오늘' : `${diff}일 후`;
       const color = diff < 0 ? 'var(--text3)' : diff <= 7 ? 'var(--red)' : 'var(--amber)';
-      html += `<div class="req-card">
-        <div class="req-top">
-          <span class="req-room">${m.room}</span>
-          <span class="badge ba">${m.date||''}</span>
-          <span style="font-size:11px;font-weight:600;color:${color}">${label}</span>
-        </div>
-        ${m.memo ? `<div class="req-content">${m.memo}</div>` : ''}
-      </div>`;
+      html += `<div class="req-card"><div class="req-top">
+        <span class="req-room">${m.room}</span>
+        <span class="badge ba">${m.date||''}</span>
+        <span style="font-size:11px;font-weight:600;color:${color}">${label}</span>
+      </div>${m.memo ? `<div class="req-content">${m.memo}</div>` : ''}</div>`;
     });
   }
 
-  // 공지 문자 미리보기
-  html += `<div class="section-title" style="margin-top:20px">📋 공지 문자</div>`;
-  let msg = `안녕하세요,\n아늑한빌 입니다.\n이번에 공실 현황이 업데이트되어 공유드립니다.\n감사합니다.\n\n아늑한빌(원룸) : 궐동 620-1\n: 관리비 포함입니다(전기 가스 인터넷 별도)\n\n\n`;
+  // 복사용 공지 문자
+  let msg = `안녕하세요,\n아늑한빌 입니다.\n이번에 공실 현황이 업데이트되어 공유드립니다.\n감사합니다.\n\n아늑한빌(원룸) : 궐동 620-1\n: 관리비 포함입니다(전기 가스 인터넷 별도)\n\n`;
   if (vacancies.length > 0) {
     const byFloor2 = {};
     vacancies.forEach(v => { const fl=v.room[0]; if(!byFloor2[fl]) byFloor2[fl]=[]; byFloor2[fl].push(v); });
@@ -415,18 +388,10 @@ function renderRealty() {
       });
     });
   }
-  html += `<textarea readonly style="width:100%;min-height:180px;font-family:monospace;font-size:12px;line-height:1.9;border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--bg);color:var(--text);resize:vertical" id="realtyMsgBox">${msg}</textarea>`;
-  html += `<button onclick="copyRealtyMsg()" style="margin-top:10px;width:100%;padding:13px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">📋 복사</button>`;
+  html += `<textarea readonly style="width:100%;min-height:170px;font-family:monospace;font-size:12px;line-height:1.9;border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--bg);color:var(--text);resize:vertical;margin-top:10px" id="realtyMsgBox">${msg}</textarea>`;
+  html += `<button onclick="copyMsg('realtyMsgBox')" style="margin-top:8px;width:100%;padding:13px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">📋 부동산 공지 복사</button>`;
 
-  document.getElementById('realtyBody').innerHTML = html;
-}
-
-function copyRealtyMsg() {
-  const el = document.getElementById('realtyMsgBox');
-  if (!el) return;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(el.value).then(()=>alert('복사됐습니다!')).catch(()=>{ el.select(); document.execCommand('copy'); alert('복사됐습니다!'); });
-  } else { el.select(); document.execCommand('copy'); alert('복사됐습니다!'); }
+  document.getElementById('noticeBody').innerHTML = html;
 }
 
 </script>
