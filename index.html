@@ -295,7 +295,7 @@ const auth = firebase.auth();
 auth.onAuthStateChanged(user => {
   if (user) {
     document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('app').style.display = '';
+    document.getElementById('app').style.display = 'block';
     startApp();
   } else {
     document.getElementById('loginScreen').style.display = 'flex';
