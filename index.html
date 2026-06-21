@@ -32,6 +32,8 @@ header h1{font-size:16px;font-weight:600}
 .room-card.unpaid{background:var(--amber-bg);border-color:var(--amber-bd)}
 .room-card.overdue{background:var(--red-bg);border-color:var(--red-bd)}
 .room-card.vacant{background:#f5f4f0;opacity:.7}
+.room-card.free{background:#f3f0ff;border-color:#c4b5fd}
+.room-card.free .room-status{color:#7c3aed}
 .room-no{font-size:15px;font-weight:700;margin-bottom:2px}
 .room-name{font-size:12px;color:var(--text2);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .room-rent{font-size:11px;font-weight:500;color:var(--text2)}
@@ -176,7 +178,7 @@ function renderRooms() {
     html += `<div class="floor-label"><span>${f.label}</span><span>${paid}/${occupied} 납부</span></div><div class="room-grid">`;
     f.rooms.forEach(r => {
       const d = roomMap[r] || { room: r, status: 'vacant', tenantName: '', rent: 0, cleaning: false };
-      const stTxt = {paid:'✓ 납부완료', unpaid:'⏳ 미납', overdue:'🔴 연체', vacant:'공실'}[d.status] || '';
+      const stTxt = {paid:'✓ 납부완료', unpaid:'⏳ 미납', overdue:'🔴 연체', vacant:'공실', free:'💜 무임거주'}[d.status] || '';
       const shortageHtml = d.shortage > 0 ? `<div class="shortage-txt">미납 ${fmtS(d.shortage)}</div>` : '';
       html += `<div class="room-card ${d.status}" onclick="openRoom('${r}')">
         <div class="room-no">${r}</div>
@@ -304,8 +306,8 @@ function renderNotice() {
   let html = '';
 
   // ── 1. 미납/연체 문자 ──
-  const overdue = rooms.filter(r => r.status === 'overdue' && r.tenantName);
-  const unpaid  = rooms.filter(r => r.status === 'unpaid'  && r.tenantName);
+  const overdue = rooms.filter(r => r.status === 'overdue' && r.tenantName && r.status !== 'free');
+  const unpaid  = rooms.filter(r => r.status === 'unpaid'  && r.tenantName && r.status !== 'free');
 
   html += `<div class="section-title" style="color:var(--red)">💬 미납·연체 문자</div>`;
   if (!overdue.length && !unpaid.length) {
