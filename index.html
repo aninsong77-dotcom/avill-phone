@@ -46,7 +46,9 @@ header h1{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-height:88vh;overflow-y:auto;padding:20px 16px 32px}
-.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 0}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin:12px 0 14px}
+.modal-close{width:32px;height:32px;border-radius:50%;border:none;background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2)}
 .modal-title{font-size:17px;font-weight:700;margin-bottom:14px}
 .info-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
 .info-row:last-child{border-bottom:none}
@@ -88,6 +90,7 @@ header h1{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px
   <symbol id="ic-tool" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
   <symbol id="ic-sync" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
   <symbol id="ic-request" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
+  <symbol id="ic-close" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
   <symbol id="ic-broom" viewBox="0 0 24 24"><line x1="20" y1="3" x2="10" y2="13"/><path d="M6 11 C2.5 11 2 15 3 18 C4 21 8 22 11 20 C14 18 14 14 10 13 Z"/><line x1="5" y1="17" x2="3" y2="21"/><line x1="8.5" y1="19" x2="7" y2="22"/><line x1="12" y1="17" x2="11" y2="21"/></symbol>
 </svg>
 </head>
@@ -126,6 +129,12 @@ header h1{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px
 <div class="modal-overlay" id="roomModal" onclick="closeRoomModal(event)">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span style="font-size:12px;color:var(--text3)">← 빈 곳 터치해도 닫힙니다</span>
+      <button class="modal-close" onclick="document.getElementById('roomModal').classList.remove('open')">
+        <svg class="ic" style="width:18px;height:18px"><use href="#ic-close"/></svg>
+      </button>
+    </div>
     <div id="roomModalContent"></div>
   </div>
 </div>
