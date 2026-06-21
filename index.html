@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>아빌라 관리</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --green:#1a7a5e; --green-bg:#e8f5f0; --green-bd:#9fd4c4;
+  --red:#c0392b; --red-bg:#fdf0ee; --red-bd:#f0a898;
+  --amber:#b5750a; --amber-bg:#fdf5e6; --amber-bd:#f0c878;
+  --blue:#1a5c8a; --blue-bg:#e8f2fa;
+  --bg:#f5f4f0; --surface:#fff; --border:#e0ddd8;
+  --text:#1a1a1a; --text2:#6b6860; --text3:#9b9890;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+header{background:#15224a;color:#fff;padding:14px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:16px;font-weight:600}
+#syncStatus{font-size:11px;opacity:.7}
+.tab-bar{display:flex;background:var(--surface);border-bottom:2px solid var(--border);position:sticky;top:52px;z-index:99}
+.tab-btn{flex:1;padding:12px 0;font-size:13px;font-weight:500;color:var(--text2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab-btn.on{color:#15224a;border-bottom-color:#15224a;font-weight:700}
+.page{display:none;padding:14px}
+.page.on{display:block}
+.floor-label{font-size:12px;font-weight:700;color:var(--text2);padding:7px 10px;background:var(--surface);border-radius:6px;margin-bottom:8px;display:flex;justify-content:space-between}
+.room-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+.room-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:all .15s;position:relative}
+.room-card.paid{background:var(--green-bg);border-color:var(--green-bd)}
+.room-card.unpaid{background:var(--amber-bg);border-color:var(--amber-bd)}
+.room-card.overdue{background:var(--red-bg);border-color:var(--red-bd)}
+.room-card.vacant{background:#f5f4f0;opacity:.7}
+.room-no{font-size:15px;font-weight:700;margin-bottom:2px}
+.room-name{font-size:12px;color:var(--text2);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.room-rent{font-size:11px;font-weight:500;color:var(--text2)}
+.room-status{font-size:11px;font-weight:600;margin-top:4px}
+.room-card.paid .room-status{color:var(--green)}
+.room-card.unpaid .room-status{color:var(--amber)}
+.room-card.overdue .room-status{color:var(--red)}
+.room-card.vacant .room-status{color:var(--text3)}
+.clean-label{display:flex;align-items:center;gap:4px;font-size:11px;margin-top:6px;cursor:pointer;color:var(--text2)}
+.clean-label input{accent-color:var(--green);cursor:pointer;width:14px;height:14px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-height:88vh;overflow-y:auto;padding:20px 16px 32px}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:14px}
+.info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.info-row:last-child{border-bottom:none}
+.info-lbl{color:var(--text2);font-size:12px}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.bg{background:var(--green-bg);color:var(--green)}.ba{background:var(--amber-bg);color:var(--amber)}.br{background:var(--red-bg);color:var(--red)}
+.req-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
+.req-top{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.req-room{font-weight:700;font-size:13px}
+.req-date{font-size:11px;color:var(--text3)}
+.req-content{font-size:13px;line-height:1.5}
+.req-feedback{font-size:12px;color:var(--text2);background:var(--bg);border-radius:6px;padding:7px 9px;margin-top:6px}
+.sched-row{display:flex;gap:10px;padding:10px;background:var(--surface);border-radius:10px;margin-bottom:8px;border:1px solid var(--border);align-items:flex-start}
+.sched-date{font-size:12px;font-weight:700;color:var(--text2);min-width:60px}
+.sched-info{flex:1}
+.sched-title{font-size:13px;font-weight:600}
+.sched-room{font-size:11px;color:var(--text3);margin-top:2px}
+.section-title{font-size:13px;font-weight:700;color:var(--text2);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.04em}
+.empty{text-align:center;color:var(--text3);padding:32px 0;font-size:13px}
+.shortage-txt{font-size:10px;color:var(--red);margin-top:2px}
+.loading{text-align:center;padding:48px;color:var(--text3)}
+.filter-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.filter-btn{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:12px;cursor:pointer;color:var(--text2)}
+.filter-btn.on{background:#15224a;color:#fff;border-color:#15224a}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏢 아빌라 관리</h1>
+  <span id="syncStatus">불러오는 중...</span>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn on" onclick="switchTab('rooms',this)">호실 현황</button>
+  <button class="tab-btn" onclick="switchTab('requests',this)">요청/일정</button>
+</div>
+
+<div class="page on" id="tab-rooms">
+  <div id="roomsBody"><div class="loading">데이터 불러오는 중...</div></div>
+</div>
+
+<div class="page" id="tab-requests">
+  <div class="filter-row" id="reqFilterRow">
+    <button class="filter-btn on" onclick="filterReqs('전체',this)">전체</button>
+    <button class="filter-btn" onclick="filterReqs('접수',this)">접수</button>
+    <button class="filter-btn" onclick="filterReqs('진행중',this)">진행중</button>
+    <button class="filter-btn" onclick="filterReqs('완료',this)">완료</button>
+  </div>
+  <div id="reqsBody"><div class="loading">데이터 불러오는 중...</div></div>
+  <div class="section-title">📅 일정</div>
+  <div id="schedsBody"></div>
+</div>
+
+<!-- 호실 상세 모달 -->
+<div class="modal-overlay" id="roomModal" onclick="closeRoomModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div id="roomModalContent"></div>
+  </div>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyAcP5LuRuudHxWFVYSRwZXct8n-LJhKWY0",
+  authDomain: "building-1-30739.firebaseapp.com",
+  projectId: "building-1-30739",
+  storageBucket: "building-1-30739.firebasestorage.app",
+  messagingSenderId: "543983501440",
+  appId: "1:543983501440:web:eddb5f38c4d7619f6f6665"
+});
+const db = firebase.firestore();
+
+const FLOORS = [
+  {label:'1층 (상가)', rooms:['101(상가)','102(상가)']},
+  {label:'2층', rooms:['201','202','203','204','205','206','207','208']},
+  {label:'3층', rooms:['301','302','303','304','305','306','307','308']},
+  {label:'4층', rooms:['401','402','403','404','405','406','407','408']},
+  {label:'5층', rooms:['501','502','503','504','505','506','507','508']},
+];
+
+let _data = null;
+let _reqFilter = '전체';
+const fmt = n => Number(n||0).toLocaleString('ko-KR') + '원';
+const fmtS = n => { n=Number(n||0); if(n>=10000) return Math.round(n/10000)+'만원'; return fmt(n); };
+
+db.collection('building').doc('phone_data').onSnapshot(doc => {
+  if (!doc.exists) { document.getElementById('syncStatus').textContent = '데이터 없음'; return; }
+  _data = doc.data();
+  const t = _data.updatedAt?.toDate?.();
+  const timeStr = t ? `${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')} 업데이트` : '동기화됨';
+  document.getElementById('syncStatus').textContent = timeStr;
+  renderRooms();
+  renderRequests();
+}, err => {
+  document.getElementById('syncStatus').textContent = '연결 오류';
+});
+
+db.collection('building').doc('cleaning').onSnapshot(doc => {
+  if (!doc.exists || !_data) return;
+  const cleanData = doc.data();
+  if (_data.rooms) {
+    _data.rooms.forEach(r => { if (cleanData[r.room] !== undefined) r.cleaning = cleanData[r.room]; });
+  }
+  renderRooms();
+});
+
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('tab-'+tab).classList.add('on');
+}
+
+function renderRooms() {
+  if (!_data || !_data.rooms) return;
+  const roomMap = {};
+  _data.rooms.forEach(r => roomMap[r.room] = r);
+  let html = '';
+  FLOORS.forEach(f => {
+    const occupied = f.rooms.filter(r => roomMap[r] && roomMap[r].status !== 'vacant').length;
+    const paid = f.rooms.filter(r => roomMap[r] && roomMap[r].status === 'paid').length;
+    html += `<div class="floor-label"><span>${f.label}</span><span>${paid}/${occupied} 납부</span></div><div class="room-grid">`;
+    f.rooms.forEach(r => {
+      const d = roomMap[r] || { room: r, status: 'vacant', tenantName: '', rent: 0, cleaning: false };
+      const stTxt = {paid:'✓ 납부완료', unpaid:'⏳ 미납', overdue:'🔴 연체', vacant:'공실'}[d.status] || '';
+      const shortageHtml = d.shortage > 0 ? `<div class="shortage-txt">미납 ${fmtS(d.shortage)}</div>` : '';
+      html += `<div class="room-card ${d.status}" onclick="openRoom('${r}')">
+        <div class="room-no">${r}</div>
+        <div class="room-name">${d.tenantName || (d.status === 'vacant' ? '공실' : '-')}</div>
+        <div class="room-rent">${d.rent ? fmtS(d.rent) : '-'}</div>
+        <div class="room-status">${stTxt}</div>
+        ${shortageHtml}
+        <label class="clean-label" onclick="event.stopPropagation()">
+          <input type="checkbox" ${d.cleaning ? 'checked' : ''} onchange="toggleCleaning('${r}',this.checked)">청소완료
+        </label>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('roomsBody').innerHTML = html;
+}
+
+function openRoom(room) {
+  if (!_data || !_data.rooms) return;
+  const d = _data.rooms.find(r => r.room === room);
+  if (!d) return;
+  const stBadge = {paid:`<span class="badge bg">✓ 납부완료</span>`, unpaid:`<span class="badge ba">미납</span>`, overdue:`<span class="badge br">연체</span>`, vacant:''}[d.status] || '';
+  const reqs = (_data.requests || []).filter(r => r.room === room).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const statusColors = {접수:'ba',진행중:'ba',완료:'bg'};
+  const reqHtml = reqs.length ? reqs.map(r => `
+    <div style="background:var(--bg);border-radius:8px;padding:9px 10px;margin-bottom:7px">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+        <span class="badge ${statusColors[r.status]||'ba'}">${r.status}</span>
+        <span style="font-size:11px;color:var(--text3)">${r.date||''}</span>
+      </div>
+      <div style="font-size:13px">${r.content}</div>
+      ${r.feedback ? `<div style="font-size:12px;color:var(--text2);margin-top:5px;padding:6px 8px;background:var(--surface);border-radius:6px">💬 ${r.feedback}</div>` : ''}
+    </div>`).join('') : '<div style="font-size:12px;color:var(--text3);padding:6px 0">요청사항 없음</div>';
+
+  document.getElementById('roomModalContent').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+      <div><div class="modal-title" style="margin-bottom:4px">${room}</div><div style="font-size:15px;font-weight:600">${d.tenantName||'공실'}</div></div>
+      <div>${stBadge}${d.shortage > 0 ? `<div style="font-size:12px;color:var(--red);margin-top:4px">미납 ${fmt(d.shortage)}</div>` : ''}</div>
+    </div>
+    <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:14px">
+      <div class="info-row"><span class="info-lbl">전화번호</span><span>${d.phone||'-'}</span></div>
+      <div class="info-row"><span class="info-lbl">월세</span><span>${d.rent ? fmt(d.rent) : '-'}</span></div>
+      <div class="info-row"><span class="info-lbl">보증금</span><span>${d.deposit ? fmt(d.deposit) : '-'}</span></div>
+      <div class="info-row"><span class="info-lbl">입주일</span><span>${d.moveIn||'-'}</span></div>
+      <div class="info-row"><span class="info-lbl">계약종료일</span><span>${d.leaseEnd||'-'}</span></div>
+      ${d.memo ? `<div class="info-row"><span class="info-lbl">메모</span><span style="font-size:12px">${d.memo}</span></div>` : ''}
+    </div>
+    <div class="section-title">요청사항</div>
+    ${reqHtml}
+  `;
+  document.getElementById('roomModal').classList.add('open');
+}
+
+function closeRoomModal(e) {
+  if (e.target === document.getElementById('roomModal')) document.getElementById('roomModal').classList.remove('open');
+}
+
+async function toggleCleaning(room, checked) {
+  try {
+    await db.collection('building').doc('cleaning').set(
+      { [room]: checked, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
+      { merge: true }
+    );
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+
+function filterReqs(status, el) {
+  _reqFilter = status;
+  document.querySelectorAll('#reqFilterRow .filter-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  renderRequests();
+}
+
+function renderRequests() {
+  if (!_data) return;
+  let reqs = [...(_data.requests||[])].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  if (_reqFilter !== '전체') reqs = reqs.filter(r => r.status === _reqFilter);
+  const statusColors = {접수:'ba',진행중:'ba',완료:'bg'};
+  const catColors = {수리:'br',민원:'ba',시설:'bb',기타:'bk'};
+  document.getElementById('reqsBody').innerHTML = reqs.length
+    ? reqs.map(r => `<div class="req-card">
+        <div class="req-top">
+          <span class="req-room">${r.room}</span>
+          <span class="badge ${catColors[r.cat]||'ba'}">${r.cat||''}</span>
+          <span class="badge ${statusColors[r.status]||'ba'}">${r.status}</span>
+          <span class="req-date">${r.date||''}</span>
+        </div>
+        <div class="req-content">${r.content}</div>
+        ${r.feedback ? `<div class="req-feedback">💬 ${r.feedback}</div>` : ''}
+      </div>`).join('')
+    : '<div class="empty">요청사항이 없습니다</div>';
+
+  const today = new Date().toISOString().slice(0,10);
+  const scheds = [...(_data.schedules||[])].sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  document.getElementById('schedsBody').innerHTML = scheds.length
+    ? scheds.map(s => {
+        const past = s.date < today;
+        return `<div class="sched-row" style="${past ? 'opacity:.55' : ''}">
+          <div class="sched-date">${s.date||''}</div>
+          <div class="sched-info">
+            <div class="sched-title">${s.title}</div>
+            <div class="sched-room">${s.room} · <span class="badge ${s.status==='완료'?'bg':'ba'}">${s.status}</span></div>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="empty">일정이 없습니다</div>';
+}
+</script>
+</body>
+</html>
