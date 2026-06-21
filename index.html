@@ -91,7 +91,22 @@ header h1{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px
   <symbol id="ic-sync" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
   <symbol id="ic-request" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
   <symbol id="ic-close" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
-  <symbol id="ic-broom" viewBox="0 0 24 24"><line x1="20" y1="3" x2="10" y2="13"/><path d="M6 11 C2.5 11 2 15 3 18 C4 21 8 22 11 20 C14 18 14 14 10 13 Z"/><line x1="5" y1="17" x2="3" y2="21"/><line x1="8.5" y1="19" x2="7" y2="22"/><line x1="12" y1="17" x2="11" y2="21"/></symbol>
+  <symbol id="ic-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="ic-chevron-up" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></symbol>
+  <symbol id="ic-chart" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></symbol>
+  <symbol id="ic-sms" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></symbol>
+  <!-- 청소 빗자루 아이콘 — 이미지와 동일한 밀대형 -->
+  <symbol id="ic-broom" viewBox="0 0 24 24">
+    <rect x="10" y="1" width="4" height="3" rx="1.5"/>
+    <line x1="12" y1="4" x2="12" y2="10"/>
+    <rect x="2" y="10" width="20" height="6" rx="1.5"/>
+    <line x1="5"  y1="16" x2="5"  y2="20"/>
+    <line x1="8"  y1="16" x2="8"  y2="21"/>
+    <line x1="11" y1="16" x2="11" y2="21"/>
+    <line x1="14" y1="16" x2="14" y2="21"/>
+    <line x1="17" y1="16" x2="17" y2="21"/>
+    <line x1="20" y1="16" x2="20" y2="20"/>
+  </symbol>
 </svg>
 </head>
 <body>
@@ -102,10 +117,13 @@ header h1{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px
 
 <div class="tab-bar">
   <button class="tab-btn on" onclick="switchTab('rooms',this)">
-    <svg class="ic"><use href="#ic-home"/></svg>호실 현황
+    <svg class="ic"><use href="#ic-home"/></svg>호실
   </button>
   <button class="tab-btn" onclick="switchTab('requests',this)">
     <svg class="ic"><use href="#ic-request"/></svg>요청/일정
+  </button>
+  <button class="tab-btn" onclick="switchTab('sms',this)">
+    <svg class="ic"><use href="#ic-sms"/></svg>문자발송
   </button>
 </div>
 
@@ -123,6 +141,29 @@ header h1{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px
   <div id="reqsBody"><div class="loading">연결 중...</div></div>
   <div class="section-title"><svg class="ic"><use href="#ic-calendar"/></svg>일정</div>
   <div id="schedsBody"></div>
+</div>
+
+<div class="page" id="tab-sms">
+  <div class="filter-row" id="smsFilterRow">
+    <button class="filter-btn on" onclick="filterSms('미납연체',this)">미납·연체</button>
+    <button class="filter-btn" onclick="filterSms('전체',this)">전체 세입자</button>
+  </div>
+  <div style="background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--amber)">
+    이름 터치 → 문자 앱이 열리고 메시지가 자동으로 입력됩니다
+  </div>
+  <div style="margin-bottom:10px">
+    <label style="font-size:12px;font-weight:600;color:var(--text2)">메시지 템플릿</label>
+    <select id="smsTemplate" onchange="renderSmsTab()" style="width:100%;margin-top:4px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface)">
+      <option value="월세납부">월세 납부 요청</option>
+      <option value="연체안내">연체 안내</option>
+      <option value="계약만료">계약 만료 안내</option>
+      <option value="직접입력">직접 입력</option>
+    </select>
+    <div id="smsMsgCustom" style="display:none;margin-top:6px">
+      <textarea id="smsMsgText" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-height:80px;resize:vertical" placeholder="보낼 메시지를 입력하세요"></textarea>
+    </div>
+  </div>
+  <div id="smsBody"><div class="loading">연결 중...</div></div>
 </div>
 
 <!-- 호실 상세 모달 -->
@@ -160,6 +201,8 @@ const FLOORS = [
 
 let _data = null;
 let _reqFilter = '전체';
+let _viewMode = 'split';
+let _currentRoom = null;
 const fmt = n => Number(n||0).toLocaleString('ko-KR') + '원';
 const fmtS = n => { n=Number(n||0); if(n>=10000) return Math.round(n/10000)+'만원'; return fmt(n); };
 
@@ -180,6 +223,7 @@ db.collection('building').doc('phone_data').onSnapshot(doc => {
   setSyncStatus(timeStr);
   renderRooms();
   renderRequests();
+  renderSmsTab();
 }, err => {
   setSyncStatus('연결 오류');
   document.getElementById('roomsBody').innerHTML = `<div class="loading" style="color:var(--red)">연결 오류: ${err.message}</div>`;
@@ -243,87 +287,200 @@ function openRoom(room) {
   if (!_data || !_data.rooms) return;
   const d = _data.rooms.find(r => r.room === room);
   if (!d) return;
+  _currentRoom = room;
+  renderRoomModal(d);
+  document.getElementById('roomModal').classList.add('open');
+  document.querySelector('#roomModal .modal-sheet').scrollTop = 0;
+}
 
-  const reqs = (_data.requests || []).filter(r => r.room === room).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+function setViewMode(mode) {
+  _viewMode = mode;
+  if (!_currentRoom || !_data) return;
+  const d = _data.rooms.find(r => r.room === _currentRoom);
+  if (d) { renderRoomModal(d); document.querySelector('#roomModal .modal-sheet').scrollTop = 0; }
+}
+
+function toggleCycleTable() {
+  const body = document.getElementById('cycleTableBody');
+  const btn = document.getElementById('cycleToggleBtn');
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  btn.innerHTML = open
+    ? `<svg class="ic" style="width:14px;height:14px"><use href="#ic-chevron-down"/></svg> 펼치기`
+    : `<svg class="ic" style="width:14px;height:14px"><use href="#ic-chevron-up"/></svg> 접기`;
+}
+
+function renderRoomModal(d) {
+  const room = d.room;
+  const today2 = new Date().toISOString().slice(0,10);
   const statusColors = {접수:'ba',진행중:'ba',완료:'bg'};
   const catColors = {수리:'br',민원:'ba',시설:'bb',기타:'bk'};
+  const reqs = (_data.requests||[]).filter(r=>r.room===room).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
   const phoneHtml = d.phone
     ? `<a class="phone-link" href="tel:${d.phone}"><svg class="ic" style="stroke:var(--blue)"><use href="#ic-phone"/></svg>${d.phone}</a>`
     : '<span style="color:var(--text3)">미등록</span>';
 
-  // 납부 요약
-  const depTarget = d.depTarget || 0;
-  const depPaid = d.depPaid || 0;
-  const depShort = depTarget - depPaid;
-  const totalRequired = d.totalRequired || 0;
-  const totalRentPaid = d.totalRentPaid || 0;
-  const totalObligation = depTarget + totalRequired;
-  const totalPaidAll = depPaid + totalRentPaid;
-  const remaining = Math.max(0, totalObligation - totalPaidAll);
+  const depTarget = d.depTarget||0, depPaid = d.depPaid||0, depShort = depTarget-depPaid;
+  const totalRequired = d.totalRequired||0, totalRentPaid = d.totalRentPaid||0;
+  const totalObligation = depTarget+totalRequired, totalPaidAll = depPaid+totalRentPaid;
+  const remaining = Math.max(0, totalObligation-totalPaidAll);
+  const cycles = d.cycles||[];
 
-  const summaryHtml = d.status !== 'vacant' ? `
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 6px;text-align:center">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:4px">총 의무액</div>
-        <div style="font-size:15px;font-weight:700">${fmtS(totalObligation)}</div>
-      </div>
-      <div style="background:var(--green-bg);border:1px solid var(--green-bd);border-radius:8px;padding:10px 6px;text-align:center">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:4px">총 입금액</div>
-        <div style="font-size:15px;font-weight:700;color:var(--green)">${fmtS(totalPaidAll)}</div>
-      </div>
-      <div style="background:${remaining>0?'var(--red-bg)':'var(--green-bg)'};border:1px solid ${remaining>0?'var(--red-bd)':'var(--green-bd)'};border-radius:8px;padding:10px 6px;text-align:center">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:4px">${remaining>0?'잔금':'납부현황'}</div>
-        <div style="font-size:15px;font-weight:700;color:${remaining>0?'var(--red)':'var(--green)'}">${remaining>0?fmtS(remaining):'완납 ✓'}</div>
-      </div>
+  // 눈금 진행바
+  const makeBar = (paid, total, color) => {
+    const pct = total>0 ? Math.min(100,paid/total*100) : 0;
+    return `<div style="position:relative;height:22px;background:var(--border);border-radius:11px;overflow:hidden">
+      <div style="position:absolute;left:0;top:0;height:100%;width:${pct.toFixed(1)}%;background:${color};transition:width .3s"></div>
+      ${[25,50,75].map(p=>`<div style="position:absolute;left:${p}%;top:0;height:100%;width:1px;background:rgba(255,255,255,.35)"></div>`).join('')}
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)">${Math.round(pct)}%</div>
     </div>
-    ${depTarget>0?`<div style="margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
-        <span style="font-weight:600">보증금</span>
-        <span>${fmtS(depPaid)} / ${fmtS(depTarget)} ${depShort>0?`<b style="color:var(--amber)">${fmtS(depShort)} 부족</b>`:'<b style="color:var(--green)">완납 ✓</b>'}</span>
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:2px;padding:0 2px"><span>0</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>`;
+  };
+
+  // 스택 진행바 (통합 보기)
+  const makeStackBar = () => {
+    const dp = totalObligation>0 ? Math.min(100,depPaid/totalObligation*100) : 0;
+    const rp = totalObligation>0 ? Math.min(100-dp,totalRentPaid/totalObligation*100) : 0;
+    const bd = totalObligation>0 ? Math.min(99.5,depTarget/totalObligation*100) : 0;
+    const tp = totalObligation>0 ? Math.min(100,totalPaidAll/totalObligation*100) : 0;
+    return `<div style="position:relative;height:26px;background:var(--border);border-radius:13px;overflow:hidden">
+      <div style="position:absolute;left:0;top:0;height:100%;width:${dp.toFixed(1)}%;background:#6b3fa0"></div>
+      <div style="position:absolute;left:${dp.toFixed(1)}%;top:0;height:100%;width:${rp.toFixed(1)}%;background:var(--green)"></div>
+      ${bd>0&&bd<99.5?`<div style="position:absolute;left:${bd.toFixed(1)}%;top:0;height:100%;width:2px;background:rgba(255,255,255,.5)"></div>`:''}
+      ${[25,50,75].map(p=>`<div style="position:absolute;left:${p}%;top:0;height:100%;width:1px;background:rgba(255,255,255,.2)"></div>`).join('')}
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)">${Math.round(tp)}%</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:2px;padding:0 2px"><span>0</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+    ${depTarget>0?`<div style="display:flex;gap:12px;font-size:10px;color:var(--text3);margin-top:5px">
+      <span><span style="color:#6b3fa0">■</span> 보증금 ${Math.round(bd)}% 구간</span>
+      <span><span style="color:var(--green)">■</span> 월세 ${Math.round(100-bd)}% 구간</span>
+    </div>`:''}`;
+  };
+
+  // 회차 도트 그리드
+  const dotsHtml = cycles.length ? (() => {
+    const unpaidTotal = cycles.filter(c=>c.start<=today2&&c.shortage>0).length;
+    let h = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+      <div style="display:flex;gap:8px;font-size:10px;color:var(--text3);flex-wrap:wrap">
+        <span style="font-weight:600;color:var(--text2);font-size:11px">회차 슬롯</span>
+        <span><span style="color:var(--green)">●</span>완납</span>
+        <span><span style="color:var(--amber)">△</span>부분</span>
+        <span><span style="color:var(--red)">✗</span>미납</span>
+        <span><span style="color:var(--text3)">○</span>예정</span>
       </div>
-      <div style="height:10px;background:var(--border);border-radius:5px;overflow:hidden">
-        <div style="height:100%;width:${Math.min(100,depPaid/depTarget*100).toFixed(1)}%;background:var(--purple,#6b3fa0)"></div>
+      <div style="font-size:11px"><b>${cycles.length}개월</b>${unpaidTotal>0?` · <b style="color:var(--red)">${unpaidTotal}달 미납</b>`:' · <span style="color:var(--green)">미납 없음 ✓</span>'}</div>
+    </div>`;
+    for (let yi=0; yi*12<cycles.length; yi++) {
+      const group = cycles.slice(yi*12, yi*12+12);
+      const unpaidG = group.filter(c=>c.start<=today2&&c.shortage>0).length;
+      h += `<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px">
+        <div style="min-width:34px;text-align:right;flex-shrink:0;padding-top:2px">
+          <div style="font-size:10px;font-weight:700;color:var(--text2)">${yi+1}년차</div>
+          ${unpaidG>0?`<div style="font-size:9px;color:var(--red)">${unpaidG}미납</div>`:''}
+        </div>
+        <div style="display:flex;gap:3px;flex-wrap:wrap">`;
+      group.forEach((c,ci) => {
+        const due = c.start<=today2;
+        let dc,ds;
+        if(c.paid){dc='var(--green)';ds='●';}
+        else if(!due){dc='var(--text3)';ds='○';}
+        else if(c.collected>0){dc='var(--amber)';ds='△';}
+        else{dc='var(--red)';ds='✗';}
+        const idx = yi*12+ci+1;
+        h += `<div style="display:flex;flex-direction:column;align-items:center;gap:1px">
+          <div style="width:22px;height:22px;border-radius:50%;background:${dc};display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700">${ds}</div>
+          <div style="font-size:8px;color:var(--text3)">${idx}</div>
+        </div>`;
+      });
+      h += '</div></div>';
+    }
+    return h;
+  })() : '';
+
+  // 납부 시각화 섹션 (분리/통합 모드)
+  const vizHtml = d.status!=='vacant' ? `
+    <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px"><svg class="ic"><use href="#ic-chart"/></svg>납부 현황</div>
+        <div style="display:flex;gap:4px">
+          <button onclick="setViewMode('split')" style="padding:4px 10px;border-radius:6px;border:1px solid ${_viewMode==='split'?'#15224a':'var(--border)'};background:${_viewMode==='split'?'#15224a':'var(--surface)'};color:${_viewMode==='split'?'#fff':'var(--text2)'};font-size:11px;cursor:pointer">분리</button>
+          <button onclick="setViewMode('combined')" style="padding:4px 10px;border-radius:6px;border:1px solid ${_viewMode==='combined'?'#15224a':'var(--border)'};background:${_viewMode==='combined'?'#15224a':'var(--surface)'};color:${_viewMode==='combined'?'#fff':'var(--text2)'};font-size:11px;cursor:pointer">통합</button>
+        </div>
       </div>
-    </div>`:''}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:14px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 5px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);line-height:1.4;margin-bottom:3px">총 의무액</div>
+          <div style="font-size:14px;font-weight:700">${fmtS(totalObligation)}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">${depTarget>0?`보${fmtS(depTarget)}+월${fmtS(totalRequired)}`:`월세 ${fmtS(totalRequired)}`}</div>
+        </div>
+        <div style="background:var(--green-bg);border:1px solid var(--green-bd);border-radius:8px;padding:9px 5px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);line-height:1.4;margin-bottom:3px">총 입금액</div>
+          <div style="font-size:14px;font-weight:700;color:var(--green)">${fmtS(totalPaidAll)}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">${depTarget>0?`보${fmtS(depPaid)}+월${fmtS(totalRentPaid)}`:`월세 ${fmtS(totalRentPaid)}`}</div>
+        </div>
+        <div style="background:${remaining>0?'var(--red-bg)':'var(--green-bg)'};border:1px solid ${remaining>0?'var(--red-bd)':'var(--green-bd)'};border-radius:8px;padding:9px 5px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);line-height:1.4;margin-bottom:3px">${remaining>0?'잔금':'납부현황'}</div>
+          <div style="font-size:14px;font-weight:700;color:${remaining>0?'var(--red)':'var(--green)'}">${remaining>0?fmtS(remaining):'완납 ✓'}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">${remaining>0&&totalObligation>0?`${Math.round(remaining/totalObligation*100)}% 미납`:'전액납부'}</div>
+        </div>
+      </div>
+      ${_viewMode==='split' ? `
+        ${depTarget>0?`<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+            <span style="font-weight:600;color:var(--text2)">보증금</span>
+            <span>${fmtS(depPaid)} / ${fmtS(depTarget)} ${depShort>0?`<b style="color:var(--amber)">${fmtS(depShort)} 부족</b>`:'<b style="color:var(--green)">완납 ✓</b>'}</span>
+          </div>${makeBar(depPaid,depTarget,'#6b3fa0')}</div>`:''}
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+            <span style="font-weight:600;color:var(--text2)">월세</span>
+            <span>${fmtS(totalRentPaid)} / ${fmtS(totalRequired)} ${d.shortage>0?`<b style="color:var(--red)">${fmtS(d.shortage)} 미납</b>`:'<b style="color:var(--green)">완납 ✓</b>'}</span>
+          </div>${makeBar(totalRentPaid,totalRequired,'var(--green)')}</div>
+      ` : `<div>${makeStackBar()}</div>`}
+      ${cycles.length?`<div style="border-top:1px solid var(--border);padding-top:10px;margin-top:12px">${dotsHtml}</div>`:''}
+    </div>` : '';
+
+  // 회차 표 (접힘)
+  const cycleTableHtml = cycles.length ? `
     <div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
-        <span style="font-weight:600">월세</span>
-        <span>${fmtS(totalRentPaid)} / ${fmtS(totalRequired)} ${d.shortage>0?`<b style="color:var(--red)">${fmtS(d.shortage)} 미납</b>`:'<b style="color:var(--green)">완납 ✓</b>'}</span>
-      </div>
-      <div style="height:10px;background:var(--border);border-radius:5px;overflow:hidden">
-        <div style="height:100%;width:${totalRequired>0?Math.min(100,totalRentPaid/totalRequired*100).toFixed(1):0}%;background:var(--green)"></div>
+      <button id="cycleToggleBtn" onclick="toggleCycleTable()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text)">
+        <span style="display:flex;align-items:center;gap:6px"><svg class="ic"><use href="#ic-calendar"/></svg>월세 납부 회차 (${cycles.length}회차)</span>
+        <span id="cycleToggleBtn" style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text3);font-weight:400"><svg class="ic" style="width:14px;height:14px"><use href="#ic-chevron-down"/></svg> 펼치기</span>
+      </button>
+      <div id="cycleTableBody" style="display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--bg)">
+            <th style="padding:7px 8px;text-align:center;color:var(--text3);font-size:11px;border-bottom:1px solid var(--border)">회차</th>
+            <th style="padding:7px 8px;text-align:left;color:var(--text3);font-size:11px;border-bottom:1px solid var(--border)">기간</th>
+            <th style="padding:7px 8px;text-align:right;color:var(--text3);font-size:11px;border-bottom:1px solid var(--border)">월세</th>
+            <th style="padding:7px 8px;text-align:right;color:var(--text3);font-size:11px;border-bottom:1px solid var(--border)">입금</th>
+            <th style="padding:7px 8px;text-align:center;color:var(--text3);font-size:11px;border-bottom:1px solid var(--border)">상태</th>
+          </tr></thead>
+          <tbody>${cycles.slice().reverse().map((c,i)=>{
+            const due = c.start<=today2;
+            const stTxt = c.paid?`<span style="color:var(--green);font-weight:600">완납</span>`
+              :!due?`<span style="color:var(--text3)">예정</span>`
+              :c.directCollected>0?`<span style="color:var(--amber);font-weight:600">부분</span>`
+              :c.collected>0?`<span style="color:var(--blue);font-weight:600">이월</span>`
+              :`<span style="color:var(--red);font-weight:600">미납</span>`;
+            const bg = c.paid?'':(c.shortage>0&&due?'background:#fff8f8;':'');
+            const idx = cycles.length-i;
+            return `<tr style="border-bottom:1px solid var(--border);${bg}">
+              <td style="padding:6px 8px;text-align:center;color:var(--text3);font-size:11px">${idx}</td>
+              <td style="padding:6px 8px;font-size:11px;white-space:nowrap">${c.start?c.start.slice(0,7):''}</td>
+              <td style="padding:6px 8px;text-align:right">${fmtS(c.required)}</td>
+              <td style="padding:6px 8px;text-align:right">${c.directCollected>0?fmtS(c.directCollected):c.collected>0?`<span style="color:var(--blue)">이월</span>`:'-'}</td>
+              <td style="padding:6px 8px;text-align:center">${stTxt}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
       </div>
     </div>` : '';
 
-  // 회차 표
-  const cycles = d.cycles || [];
-  const cycleHtml = cycles.length ? `
-    <div class="section-title"><svg class="ic"><use href="#ic-calendar"/></svg>월세 납부 회차</div>
-    <div style="overflow-x:auto;margin-bottom:14px">
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr style="background:var(--bg)">
-        <th style="padding:6px 8px;text-align:left;color:var(--text3);font-size:11px">기간</th>
-        <th style="padding:6px 8px;text-align:right;color:var(--text3);font-size:11px">월세</th>
-        <th style="padding:6px 8px;text-align:right;color:var(--text3);font-size:11px">입금</th>
-        <th style="padding:6px 8px;text-align:center;color:var(--text3);font-size:11px">상태</th>
-      </tr></thead>
-      <tbody>${cycles.slice().reverse().map((c,i) => {
-        const stTxt = c.paid ? `<span style="color:var(--green);font-weight:600">완납</span>`
-          : c.directCollected>0 ? `<span style="color:var(--amber);font-weight:600">부분</span>`
-          : c.collected>0 ? `<span style="color:var(--blue);font-weight:600">이월</span>`
-          : `<span style="color:var(--red);font-weight:600">미납</span>`;
-        return `<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:6px 8px;white-space:nowrap">${c.start?c.start.slice(0,7):''}</td>
-          <td style="padding:6px 8px;text-align:right">${fmtS(c.required)}</td>
-          <td style="padding:6px 8px;text-align:right">${c.directCollected>0?fmtS(c.directCollected):c.collected>0?'<span style="color:var(--blue)">이월</span>':'-'}</td>
-          <td style="padding:6px 8px;text-align:center">${stTxt}</td>
-        </tr>`;
-      }).join('')}</tbody>
-    </table></div>` : '';
-
-  const reqHtml = reqs.length ? reqs.map(r => `
+  const reqHtml = reqs.length ? reqs.map(r=>`
     <div style="background:var(--bg);border-radius:8px;padding:9px 10px;margin-bottom:7px">
-      <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
         <span class="badge ${catColors[r.cat]||'bk'}">${r.cat||''}</span>
         <span class="badge ${statusColors[r.status]||'ba'}">${r.status}</span>
         <span style="font-size:11px;color:var(--text3)">${r.date||''}</span>
@@ -339,7 +496,7 @@ function openRoom(room) {
         <div class="modal-title" style="margin-bottom:2px">${room}</div>
         <div style="font-size:15px;font-weight:600">${d.tenantName||'공실'}</div>
       </div>
-      <div style="text-align:right">
+      <div>
         ${d.shortage>0?`<span class="badge br">미납 ${fmtS(d.shortage)}</span>`:`<span class="badge bg"><svg class="ic" style="width:11px;height:11px;stroke:var(--green)"><use href="#ic-check"/></svg> 납부완료</span>`}
       </div>
     </div>
@@ -351,12 +508,11 @@ function openRoom(room) {
       <div class="info-row"><span class="info-lbl"><svg class="ic" style="width:13px;height:13px"><use href="#ic-calendar"/></svg>계약종료일</span><span>${d.leaseEnd||'-'}</span></div>
       ${d.memo?`<div class="info-row"><span class="info-lbl">메모</span><span style="font-size:12px">${d.memo}</span></div>`:''}
     </div>
-    ${summaryHtml}
-    ${cycleHtml}
+    ${vizHtml}
+    ${cycleTableHtml}
     <div class="section-title"><svg class="ic"><use href="#ic-request"/></svg>요청사항</div>
     ${reqHtml}
   `;
-  document.getElementById('roomModal').classList.add('open');
 }
 
 function closeRoomModal(e) {
@@ -379,6 +535,70 @@ function filterReqs(status, el) {
   document.querySelectorAll('#reqFilterRow .filter-btn').forEach(b => b.classList.remove('on'));
   el.classList.add('on');
   renderRequests();
+}
+
+let _smsFilter = '미납연체';
+function filterSms(filter, el) {
+  _smsFilter = filter;
+  document.querySelectorAll('#smsFilterRow .filter-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  renderSmsTab();
+}
+
+function getSmsMessage(d) {
+  const sel = document.getElementById('smsTemplate')?.value || '월세납부';
+  if (sel === '직접입력') return document.getElementById('smsMsgText')?.value || '';
+  const name = d.tenantName || '';
+  const room = d.room;
+  const shortage = d.shortage > 0 ? fmtS(d.shortage) : fmtS(d.rent);
+  if (sel === '월세납부') return `안녕하세요 ${name}님, ${room} 이번 달 월세 ${shortage} 납부 부탁드립니다. 감사합니다.`;
+  if (sel === '연체안내') return `안녕하세요 ${name}님, ${room} 월세 ${shortage} 연체 중입니다. 빠른 납부 부탁드립니다.`;
+  if (sel === '계약만료') return `안녕하세요 ${name}님, ${room} 임대차 계약 만료일이 다가옵니다. 계약 갱신 의사를 알려주시면 감사하겠습니다.`;
+  return '';
+}
+
+function renderSmsTab() {
+  if (!_data || !_data.rooms) return;
+  const customWrap = document.getElementById('smsMsgCustom');
+  const sel = document.getElementById('smsTemplate')?.value;
+  if (customWrap) customWrap.style.display = sel === '직접입력' ? 'block' : 'none';
+
+  let rooms = _data.rooms.filter(r => r.status !== 'vacant');
+  if (_smsFilter === '미납연체') rooms = rooms.filter(r => r.status === 'unpaid' || r.status === 'overdue');
+  rooms = rooms.sort((a,b) => a.room.localeCompare(b.room));
+
+  if (!rooms.length) {
+    document.getElementById('smsBody').innerHTML = '<div class="empty">해당 세입자가 없습니다</div>';
+    return;
+  }
+
+  const stBg = {unpaid:'var(--amber-bg)', overdue:'var(--red-bg)', paid:'var(--green-bg)'};
+  const stBd = {unpaid:'var(--amber-bd)', overdue:'var(--red-bd)', paid:'var(--green-bd)'};
+  const stLabel = {unpaid:'미납', overdue:'연체', paid:'납부완료'};
+  const stColor = {unpaid:'var(--amber)', overdue:'var(--red)', paid:'var(--green)'};
+
+  document.getElementById('smsBody').innerHTML = rooms.map(d => {
+    const msg = encodeURIComponent(getSmsMessage(d));
+    const phone = (d.phone||'').replace(/-/g,'');
+    const smsHref = phone ? `sms:${phone}?body=${msg}` : '';
+    return `<div style="background:${stBg[d.status]||'var(--surface)'};border:1px solid ${stBd[d.status]||'var(--border)'};border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span style="font-weight:700">${d.room}</span>
+          <span style="font-size:11px;color:${stColor[d.status]};font-weight:600">${stLabel[d.status]||''}</span>
+          ${d.shortage>0?`<span style="font-size:11px;color:var(--red)">· ${fmtS(d.shortage)}</span>`:''}
+        </div>
+        <div style="font-size:13px;color:var(--text2)">${d.tenantName||'-'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${d.phone||'번호 없음'}</div>
+      </div>
+      ${smsHref
+        ? `<a href="${smsHref}" style="flex:none;background:#15224a;color:#fff;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:5px;white-space:nowrap">
+            <svg class="ic" style="stroke:#fff;width:15px;height:15px"><use href="#ic-sms"/></svg>문자
+          </a>`
+        : `<span style="flex:none;padding:10px 14px;font-size:12px;color:var(--text3)">번호없음</span>`
+      }
+    </div>`;
+  }).join('');
 }
 
 function renderRequests() {
