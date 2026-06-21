@@ -143,10 +143,14 @@ header h1{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px
     <div class="login-field">
       <label>비밀번호</label>
       <input type="password" id="loginPw" placeholder="비밀번호" autocomplete="current-password"
-        onkeydown="if(event.key==='Enter')doLogin()">
+        onkeydown="if(event.key==='Enter')submitAuth()">
     </div>
     <div class="login-err" id="loginErr"></div>
-    <button class="login-btn" onclick="doLogin()" id="loginBtn">로그인</button>
+    <button class="login-btn" onclick="submitAuth()" id="loginBtn">로그인</button>
+    <div style="text-align:center;margin-top:16px">
+      <span id="modeText" style="font-size:13px;color:var(--text3)">처음 사용하시나요?</span>
+      <button onclick="toggleAuthMode()" id="modeBtn" style="font-size:13px;color:#15224a;font-weight:700;background:none;border:none;cursor:pointer;margin-left:4px">계정 만들기</button>
+    </div>
   </div>
 </div>
 
@@ -292,27 +296,47 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-async function doLogin() {
+let _authMode = 'login'; // 'login' | 'signup'
+
+function toggleAuthMode() {
+  _authMode = _authMode === 'login' ? 'signup' : 'login';
+  const isSignup = _authMode === 'signup';
+  document.getElementById('loginBtn').textContent  = isSignup ? '계정 만들기' : '로그인';
+  document.getElementById('modeText').textContent  = isSignup ? '이미 계정이 있으신가요?' : '처음 사용하시나요?';
+  document.getElementById('modeBtn').textContent   = isSignup ? '로그인하기' : '계정 만들기';
+  document.getElementById('loginErr').textContent  = '';
+}
+
+async function submitAuth() {
   const email = document.getElementById('loginEmail').value.trim();
   const pw    = document.getElementById('loginPw').value;
   const errEl = document.getElementById('loginErr');
   const btn   = document.getElementById('loginBtn');
   errEl.textContent = '';
   if (!email || !pw) { errEl.textContent = '이메일과 비밀번호를 입력해주세요'; return; }
-  btn.textContent = '로그인 중...'; btn.disabled = true;
+  if (pw.length < 6)  { errEl.textContent = '비밀번호는 6자 이상이어야 합니다'; return; }
+  const label = _authMode === 'signup' ? '가입 중...' : '로그인 중...';
+  btn.textContent = label; btn.disabled = true;
   try {
-    await auth.signInWithEmailAndPassword(email, pw);
+    if (_authMode === 'signup') {
+      await auth.createUserWithEmailAndPassword(email, pw);
+    } else {
+      await auth.signInWithEmailAndPassword(email, pw);
+    }
   } catch(e) {
     const msgs = {
-      'auth/invalid-credential':'이메일 또는 비밀번호가 틀렸습니다',
-      'auth/user-not-found':'등록된 계정이 없습니다',
-      'auth/wrong-password':'비밀번호가 틀렸습니다',
-      'auth/invalid-email':'이메일 형식을 확인해주세요',
-      'auth/too-many-requests':'잠시 후 다시 시도해주세요',
+      'auth/invalid-credential'  : '이메일 또는 비밀번호가 틀렸습니다',
+      'auth/user-not-found'      : '등록된 계정이 없습니다. 계정 만들기를 눌러주세요',
+      'auth/wrong-password'      : '비밀번호가 틀렸습니다',
+      'auth/invalid-email'       : '이메일 형식을 확인해주세요',
+      'auth/email-already-in-use': '이미 사용 중인 이메일입니다. 로그인하기를 눌러주세요',
+      'auth/too-many-requests'   : '잠시 후 다시 시도해주세요',
+      'auth/weak-password'       : '비밀번호가 너무 약합니다 (6자 이상)',
     };
     errEl.textContent = msgs[e.code] || ('오류: ' + e.message);
   } finally {
-    btn.textContent = '로그인'; btn.disabled = false;
+    btn.textContent = _authMode === 'signup' ? '계정 만들기' : '로그인';
+    btn.disabled = false;
   }
 }
 
