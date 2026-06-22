@@ -114,7 +114,7 @@ header h1{font-size:16px;font-weight:600}
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <span style="font-size:15px;font-weight:700">요청사항 등록</span>
+      <span id="reqFormTitle" style="font-size:15px;font-weight:700">요청사항 등록</span>
       <button onclick="document.getElementById('reqFormModal').classList.remove('open')" style="background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:0 4px">✕</button>
     </div>
     <div style="margin-bottom:12px">
@@ -137,11 +137,19 @@ header h1{font-size:16px;font-weight:600}
       <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">내용 *</label>
       <textarea id="reqContent" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-height:90px;resize:none;box-sizing:border-box" placeholder="요청 내용을 입력하세요"></textarea>
     </div>
-    <div style="margin-bottom:20px">
+    <div style="margin-bottom:12px">
       <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">날짜</label>
       <input type="date" id="reqDate" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface);box-sizing:border-box">
     </div>
-    <button onclick="savePhoneRequest()" style="width:100%;padding:14px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">등록하기</button>
+    <div id="reqStatusRow" style="margin-bottom:20px;display:none">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">상태</label>
+      <select id="reqStatus" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface)">
+        <option value="접수">접수</option>
+        <option value="진행중">진행중</option>
+        <option value="완료">완료</option>
+      </select>
+    </div>
+    <button id="reqFormBtn" onclick="savePhoneRequest()" style="width:100%;padding:14px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">등록하기</button>
   </div>
 </div>
 
@@ -174,6 +182,7 @@ const FLOORS = [
 
 let _data = null;
 let _reqFilter = '전체';
+let _editReqId = null;
 const fmt = n => Number(n||0).toLocaleString('ko-KR') + '원';
 const fmtS = n => { n=Number(n||0); if(n>=10000) return Math.round(n/10000)+'만원'; return fmt(n); };
 
@@ -419,13 +428,37 @@ async function toggleCleaning(room, checked) {
 }
 
 function openReqForm(room) {
+  _editReqId = null;
+  document.getElementById('reqFormTitle').textContent = '요청사항 등록';
+  document.getElementById('reqFormBtn').textContent = '등록하기';
+  document.getElementById('reqStatusRow').style.display = 'none';
   const sel = document.getElementById('reqRoom');
   const occupied = (_data?.rooms||[]).filter(r=>r.status!=='vacant').sort((a,b)=>a.room.localeCompare(b.room));
   sel.innerHTML = '<option value="">호실 선택</option>' + occupied.map(r=>`<option value="${r.room}">${r.room} (${r.tenantName})</option>`).join('');
+  sel.disabled = false;
   if (room) sel.value = room;
   document.getElementById('reqDate').value = new Date().toISOString().slice(0,10);
   document.getElementById('reqContent').value = '';
   selectReqCatByVal('기타');
+  document.getElementById('reqFormModal').classList.add('open');
+}
+
+function openReqEdit(id) {
+  const r = (_data?.requests||[]).find(x=>x.id===id);
+  if (!r) return;
+  _editReqId = id;
+  document.getElementById('reqFormTitle').textContent = '요청사항 수정';
+  document.getElementById('reqFormBtn').textContent = '저장하기';
+  document.getElementById('reqStatusRow').style.display = 'block';
+  const sel = document.getElementById('reqRoom');
+  const occupied = (_data?.rooms||[]).filter(r=>r.status!=='vacant').sort((a,b)=>a.room.localeCompare(b.room));
+  sel.innerHTML = '<option value="">호실 선택</option>' + occupied.map(rm=>`<option value="${rm.room}">${rm.room} (${rm.tenantName})</option>`).join('');
+  sel.value = r.room;
+  sel.disabled = true;
+  document.getElementById('reqDate').value = r.date || '';
+  document.getElementById('reqContent').value = r.content || '';
+  document.getElementById('reqStatus').value = r.status || '접수';
+  selectReqCatByVal(r.cat || '기타');
   document.getElementById('reqFormModal').classList.add('open');
 }
 
@@ -449,19 +482,34 @@ async function savePhoneRequest() {
   const date = document.getElementById('reqDate').value;
   if (!room) { alert('호실을 선택해주세요'); return; }
   if (!content) { alert('내용을 입력해주세요'); return; }
-  const id = 'ph_' + Date.now() + Math.random().toString(36).slice(2,6);
-  const req = { id, room, cat, content, date, status: '접수', synced: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
-  try {
-    await db.collection('phone_requests').doc(id).set(req);
-    if (_data) {
-      _data.requests = _data.requests || [];
-      _data.requests.push({ id, room, cat, content, date, status: '접수', feedback: '' });
-      renderRequests();
-    }
-    document.getElementById('reqFormModal').classList.remove('open');
-    alert('요청사항이 등록되었습니다.\n노트북 앱에서 자동으로 반영됩니다.');
-  } catch(e) {
-    alert('저장 실패: ' + e.message);
+
+  if (_editReqId) {
+    // 수정 모드
+    const status = document.getElementById('reqStatus').value;
+    const update = { cat, content, date, status, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    try {
+      await db.collection('phone_requests').doc(_editReqId).set(update, { merge: true });
+      if (_data) {
+        const idx = _data.requests.findIndex(x=>x.id===_editReqId);
+        if (idx !== -1) Object.assign(_data.requests[idx], { cat, content, date, status });
+        renderRequests();
+      }
+      document.getElementById('reqFormModal').classList.remove('open');
+    } catch(e) { alert('저장 실패: ' + e.message); }
+  } else {
+    // 신규 등록
+    const id = 'ph_' + Date.now() + Math.random().toString(36).slice(2,6);
+    const req = { id, room, cat, content, date, status: '접수', synced: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    try {
+      await db.collection('phone_requests').doc(id).set(req);
+      if (_data) {
+        _data.requests = _data.requests || [];
+        _data.requests.push({ id, room, cat, content, date, status: '접수', feedback: '' });
+        renderRequests();
+      }
+      document.getElementById('reqFormModal').classList.remove('open');
+      alert('요청사항이 등록되었습니다.\n노트북 앱에서 자동으로 반영됩니다.');
+    } catch(e) { alert('저장 실패: ' + e.message); }
   }
 }
 
@@ -479,7 +527,7 @@ function renderRequests() {
   const statusColors = {접수:'ba',진행중:'ba',완료:'bg'};
   const catColors = {수리:'br',민원:'ba',시설:'bb',기타:'bk'};
   document.getElementById('reqsBody').innerHTML = reqs.length
-    ? reqs.map(r => `<div class="req-card">
+    ? reqs.map(r => `<div class="req-card" onclick="openReqEdit('${r.id}')" style="cursor:pointer">
         <div class="req-top">
           <span class="req-room">${r.room}</span>
           <span class="badge ${catColors[r.cat]||'ba'}">${r.cat||''}</span>
