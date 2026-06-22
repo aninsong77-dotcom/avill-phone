@@ -301,6 +301,48 @@ function openRoom(room) {
       </div>
     </details>` : '';
 
+  // ── 회차 슬롯 도트 ──
+  const dotsHtml = cycles.length && d.status !== 'free' ? (() => {
+    const unpaidTotal = cycles.filter(c=>c.start<=todaySt&&c.shortage>0).length;
+    let h = `<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+        <div style="display:flex;gap:8px;font-size:10px;color:var(--text3);flex-wrap:wrap">
+          <span style="font-weight:600;color:var(--text2);font-size:11px">회차 슬롯</span>
+          <span><span style="color:var(--green)">●</span>완납</span>
+          <span><span style="color:var(--amber)">△</span>부분</span>
+          <span><span style="color:var(--red)">✗</span>미납</span>
+          <span><span style="color:var(--text3)">○</span>예정</span>
+        </div>
+        <div style="font-size:11px"><b>${cycles.length}개월</b>${unpaidTotal>0?` · <b style="color:var(--red)">${unpaidTotal}달 미납</b>`:' · <span style="color:var(--green)">미납 없음 ✓</span>'}</div>
+      </div>`;
+    for (let yi=0; yi*12<cycles.length; yi++) {
+      const group = cycles.slice(yi*12, yi*12+12);
+      const unpaidG = group.filter(c=>c.start<=todaySt&&c.shortage>0).length;
+      h += `<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px">
+        <div style="min-width:34px;text-align:right;flex-shrink:0;padding-top:2px">
+          <div style="font-size:10px;font-weight:700;color:var(--text2)">${yi+1}년차</div>
+          ${unpaidG>0?`<div style="font-size:9px;color:var(--red)">${unpaidG}미납</div>`:''}
+        </div>
+        <div style="display:flex;gap:3px;flex-wrap:wrap">`;
+      group.forEach((c,ci) => {
+        const due = c.start<=todaySt;
+        let dc,ds;
+        if(c.paid){dc='var(--green)';ds='●';}
+        else if(!due){dc='var(--text3)';ds='○';}
+        else if(c.collected>0){dc='var(--amber)';ds='△';}
+        else{dc='var(--red)';ds='✗';}
+        const idx = yi*12+ci+1;
+        h += `<div style="display:flex;flex-direction:column;align-items:center;gap:1px">
+          <div style="width:22px;height:22px;border-radius:50%;background:${dc};display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700">${ds}</div>
+          <div style="font-size:8px;color:var(--text3)">${idx}</div>
+        </div>`;
+      });
+      h += '</div></div>';
+    }
+    h += '</div>';
+    return h;
+  })() : '';
+
   document.getElementById('roomModalContent').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
       <div><div class="modal-title" style="margin-bottom:4px">${room}</div><div style="font-size:15px;font-weight:600">${d.tenantName||'공실'}</div></div>
@@ -316,6 +358,7 @@ function openRoom(room) {
     </div>
     ${depHtml}
     ${rentHtml}
+    ${dotsHtml}
     ${cyclesHtml}
     <div class="section-title">요청사항</div>
     ${reqHtml}
