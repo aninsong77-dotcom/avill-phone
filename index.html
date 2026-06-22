@@ -91,11 +91,14 @@ header h1{font-size:16px;font-weight:600}
 </div>
 
 <div class="page" id="tab-requests">
-  <div class="filter-row" id="reqFilterRow">
-    <button class="filter-btn on" onclick="filterReqs('전체',this)">전체</button>
-    <button class="filter-btn" onclick="filterReqs('접수',this)">접수</button>
-    <button class="filter-btn" onclick="filterReqs('진행중',this)">진행중</button>
-    <button class="filter-btn" onclick="filterReqs('완료',this)">완료</button>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <div class="filter-row" id="reqFilterRow" style="flex:1;margin-bottom:0">
+      <button class="filter-btn on" onclick="filterReqs('전체',this)">전체</button>
+      <button class="filter-btn" onclick="filterReqs('접수',this)">접수</button>
+      <button class="filter-btn" onclick="filterReqs('진행중',this)">진행중</button>
+      <button class="filter-btn" onclick="filterReqs('완료',this)">완료</button>
+    </div>
+    <button onclick="openReqForm(null)" style="flex:none;padding:7px 12px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">+ 추가</button>
   </div>
   <div id="reqsBody"><div class="loading">데이터 불러오는 중...</div></div>
   <div class="section-title">📅 일정</div>
@@ -104,6 +107,42 @@ header h1{font-size:16px;font-weight:600}
 
 <div class="page" id="tab-notice">
   <div id="noticeBody"><div class="loading">데이터 불러오는 중...</div></div>
+</div>
+
+<!-- 요청 등록 모달 -->
+<div class="modal-overlay" id="reqFormModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-size:15px;font-weight:700">요청사항 등록</span>
+      <button onclick="document.getElementById('reqFormModal').classList.remove('open')" style="background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:0 4px">✕</button>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">호실</label>
+      <select id="reqRoom" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface)">
+        <option value="">호실 선택</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">분류</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="selectReqCat(this,'수리')" class="filter-btn" style="flex:1">수리</button>
+        <button onclick="selectReqCat(this,'민원')" class="filter-btn" style="flex:1">민원</button>
+        <button onclick="selectReqCat(this,'시설')" class="filter-btn" style="flex:1">시설</button>
+        <button onclick="selectReqCat(this,'기타')" class="filter-btn on" style="flex:1">기타</button>
+      </div>
+      <input type="hidden" id="reqCat" value="기타">
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">내용 *</label>
+      <textarea id="reqContent" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-height:90px;resize:none;box-sizing:border-box" placeholder="요청 내용을 입력하세요"></textarea>
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">날짜</label>
+      <input type="date" id="reqDate" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface);box-sizing:border-box">
+    </div>
+    <button onclick="savePhoneRequest()" style="width:100%;padding:14px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">등록하기</button>
+  </div>
 </div>
 
 <!-- 호실 상세 모달 -->
@@ -377,6 +416,53 @@ async function toggleCleaning(room, checked) {
       { merge: true }
     );
   } catch(e) { alert('저장 실패: ' + e.message); }
+}
+
+function openReqForm(room) {
+  const sel = document.getElementById('reqRoom');
+  const occupied = (_data?.rooms||[]).filter(r=>r.status!=='vacant').sort((a,b)=>a.room.localeCompare(b.room));
+  sel.innerHTML = '<option value="">호실 선택</option>' + occupied.map(r=>`<option value="${r.room}">${r.room} (${r.tenantName})</option>`).join('');
+  if (room) sel.value = room;
+  document.getElementById('reqDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('reqContent').value = '';
+  selectReqCatByVal('기타');
+  document.getElementById('reqFormModal').classList.add('open');
+}
+
+function selectReqCat(btn, cat) {
+  document.querySelectorAll('#reqFormModal .filter-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('reqCat').value = cat;
+}
+
+function selectReqCatByVal(cat) {
+  document.querySelectorAll('#reqFormModal .filter-btn').forEach(b=>{
+    b.classList.toggle('on', b.textContent.trim()===cat);
+  });
+  document.getElementById('reqCat').value = cat;
+}
+
+async function savePhoneRequest() {
+  const room = document.getElementById('reqRoom').value;
+  const cat = document.getElementById('reqCat').value;
+  const content = document.getElementById('reqContent').value.trim();
+  const date = document.getElementById('reqDate').value;
+  if (!room) { alert('호실을 선택해주세요'); return; }
+  if (!content) { alert('내용을 입력해주세요'); return; }
+  const id = 'ph_' + Date.now() + Math.random().toString(36).slice(2,6);
+  const req = { id, room, cat, content, date, status: '접수', synced: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+  try {
+    await db.collection('phone_requests').doc(id).set(req);
+    if (_data) {
+      _data.requests = _data.requests || [];
+      _data.requests.push({ id, room, cat, content, date, status: '접수', feedback: '' });
+      renderRequests();
+    }
+    document.getElementById('reqFormModal').classList.remove('open');
+    alert('요청사항이 등록되었습니다.\n노트북 앱에서 자동으로 반영됩니다.');
+  } catch(e) {
+    alert('저장 실패: ' + e.message);
+  }
 }
 
 function filterReqs(status, el) {
