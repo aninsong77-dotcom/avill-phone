@@ -317,13 +317,16 @@ function openRoom(room) {
   const cycles  = Array.isArray(d.cycles) ? d.cycles : [];
   const todaySt = new Date().toISOString().slice(0, 10);
   const fmtMD   = s => { if(!s) return '-'; const p=s.split('-'); return `${+p[1]}.${+p[2]}`; };
+  const todayDay = parseInt(todaySt.slice(8));
   const cycleRows = cycles.map((c, i) => {
-    const isFuture = c.start > todaySt;
+    const isFuture   = c.start > todaySt;
+    const isCurrent  = c.end >= todaySt;
+    const notYetDue  = isCurrent && todayDay < parseInt(c.start.slice(8));
     let stTxt, rowBg = '';
-    if      (c.paid)               { stTxt = `<span style="color:var(--green);font-weight:700">✓</span>`;   rowBg = 'var(--green-bg)'; }
-    else if (isFuture)             { stTxt = `<span style="color:var(--text3)">⋯</span>`; }
-    else if (c.collected > 0)      { stTxt = `<span style="color:var(--amber);font-weight:700">△</span>`;   rowBg = 'var(--amber-bg)'; }
-    else                           { stTxt = `<span style="color:var(--red);font-weight:700">✗</span>`;     rowBg = 'var(--red-bg)'; }
+    if      (c.paid)                    { stTxt = `<span style="color:var(--green);font-weight:700">✓</span>`;   rowBg = 'var(--green-bg)'; }
+    else if (isFuture || notYetDue)     { stTxt = `<span style="color:var(--text3)">⋯</span>`; }
+    else if (c.collected > 0)           { stTxt = `<span style="color:var(--amber);font-weight:700">△</span>`;   rowBg = 'var(--amber-bg)'; }
+    else                                { stTxt = `<span style="color:var(--red);font-weight:700">✗</span>`;     rowBg = 'var(--red-bg)'; }
     return `<tr style="background:${rowBg};border-top:1px solid var(--border)">
       <td style="padding:5px 8px;font-size:11px;color:var(--text2);white-space:nowrap">${i+1}회&nbsp;${fmtMD(c.start)}~${fmtMD(c.end)}</td>
       <td style="padding:5px 8px;text-align:right;font-size:11px">${fmtS(c.required)}</td>
@@ -350,8 +353,14 @@ function openRoom(room) {
     </details>` : '';
 
   // ── 회차 슬롯 도트 ──
+  const isDue = c => {
+    if (c.start > todaySt) return false;
+    const isCur = c.end >= todaySt;
+    if (isCur && todayDay < parseInt(c.start.slice(8))) return false;
+    return true;
+  };
   const dotsHtml = cycles.length && d.status !== 'free' ? (() => {
-    const unpaidTotal = cycles.filter(c=>c.start<=todaySt&&c.shortage>0).length;
+    const unpaidTotal = cycles.filter(c=>isDue(c)&&c.shortage>0).length;
     let h = `<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:8px">
         <div style="display:flex;gap:8px;font-size:10px;color:var(--text3);flex-wrap:wrap">
@@ -365,7 +374,7 @@ function openRoom(room) {
       </div>`;
     for (let yi=0; yi*12<cycles.length; yi++) {
       const group = cycles.slice(yi*12, yi*12+12);
-      const unpaidG = group.filter(c=>c.start<=todaySt&&c.shortage>0).length;
+      const unpaidG = group.filter(c=>isDue(c)&&c.shortage>0).length;
       h += `<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px">
         <div style="min-width:34px;text-align:right;flex-shrink:0;padding-top:2px">
           <div style="font-size:10px;font-weight:700;color:var(--text2)">${yi+1}년차</div>
@@ -373,7 +382,7 @@ function openRoom(room) {
         </div>
         <div style="display:flex;gap:3px;flex-wrap:wrap">`;
       group.forEach((c,ci) => {
-        const due = c.start<=todaySt;
+        const due = isDue(c);
         let dc,ds;
         if(c.paid){dc='var(--green)';ds='●';}
         else if(!due){dc='var(--text3)';ds='○';}
