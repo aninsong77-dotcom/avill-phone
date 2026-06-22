@@ -200,7 +200,13 @@ function openRoom(room) {
   if (!_data || !_data.rooms) return;
   const d = _data.rooms.find(r => r.room === room);
   if (!d) return;
-  const stBadge = {paid:`<span class="badge bg">✓ 납부완료</span>`, unpaid:`<span class="badge ba">미납</span>`, overdue:`<span class="badge br">연체</span>`, vacant:''}[d.status] || '';
+  const stBadge = {
+    paid:    `<span class="badge bg">✓ 납부완료</span>`,
+    unpaid:  `<span class="badge ba">미납</span>`,
+    overdue: `<span class="badge br">연체</span>`,
+    vacant:  '',
+    free:    `<span class="badge" style="background:#f3f0ff;color:#7c3aed">💜 무임거주</span>`
+  }[d.status] || '';
   const reqs = (_data.requests || []).filter(r => r.room === room).sort((a,b) => (b.date||'').localeCompare(a.date||''));
   const statusColors = {접수:'ba',진행중:'ba',완료:'bg'};
   const reqHtml = reqs.length ? reqs.map(r => `
@@ -212,6 +218,88 @@ function openRoom(room) {
       <div style="font-size:13px">${r.content}</div>
       ${r.feedback ? `<div style="font-size:12px;color:var(--text2);margin-top:5px;padding:6px 8px;background:var(--surface);border-radius:6px">💬 ${r.feedback}</div>` : ''}
     </div>`).join('') : '<div style="font-size:12px;color:var(--text3);padding:6px 0">요청사항 없음</div>';
+
+  // ── 보증금 현황 ──
+  const depPaid   = Number(d.depPaid   || 0);
+  const depTarget = Number(d.depTarget || 0);
+  const depShort  = Math.max(0, depTarget - depPaid);
+  const depPct    = depTarget > 0 ? Math.min(100, depPaid / depTarget * 100) : 0;
+  const depHtml   = depTarget > 0 ? `
+    <div class="section-title">🔒 보증금 현황</div>
+    <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:14px">
+      <div class="info-row">
+        <span class="info-lbl">실입금 / 목표</span>
+        <span style="font-weight:600;color:#7c3aed">${fmtS(depPaid)} / ${fmtS(depTarget)}</span>
+      </div>
+      <div class="info-row" style="border-bottom:none">
+        <span class="info-lbl">상태</span>
+        <span style="font-weight:600;color:${depShort > 0 ? 'var(--amber)' : 'var(--green)'}">${depShort > 0 ? fmtS(depShort) + ' 부족' : '완납 ✓'}</span>
+      </div>
+      <div style="margin-top:10px;height:16px;background:var(--border);border-radius:8px;overflow:hidden;position:relative">
+        <div style="position:absolute;left:0;top:0;height:100%;width:${depPct.toFixed(1)}%;background:#7c3aed"></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">${Math.round(depPct)}%</div>
+      </div>
+    </div>` : '';
+
+  // ── 월세 현황 + 진행바 ──
+  const totalRentPaid = Number(d.totalRentPaid || 0);
+  const totalRequired = Number(d.totalRequired || 0);
+  const leftover      = Number(d.leftover      || 0);
+  const rentPct       = totalRequired > 0 ? Math.min(100, totalRentPaid / totalRequired * 100) : 0;
+  const rentHtml = d.status !== 'free' && totalRequired > 0 ? `
+    <div class="section-title">🔄 월세 현황</div>
+    <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:14px">
+      <div class="info-row">
+        <span class="info-lbl">입금 / 의무</span>
+        <span style="font-weight:600;color:var(--green)">${fmtS(totalRentPaid)} / ${fmtS(totalRequired)}</span>
+      </div>
+      <div class="info-row" style="border-bottom:none">
+        <span class="info-lbl">${leftover > 0.5 ? '선납금' : '미납금'}</span>
+        <span style="font-weight:600;color:${leftover > 0.5 ? 'var(--blue)' : d.shortage > 0 ? 'var(--red)' : 'var(--green)'}">
+          ${leftover > 0.5 ? fmtS(leftover) : d.shortage > 0 ? fmtS(d.shortage) : '없음 ✓'}
+        </span>
+      </div>
+      <div style="margin-top:10px;height:16px;background:var(--border);border-radius:8px;overflow:hidden;position:relative">
+        <div style="position:absolute;left:0;top:0;height:100%;width:${rentPct.toFixed(1)}%;background:var(--green)"></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">${Math.round(rentPct)}%</div>
+      </div>
+    </div>` : '';
+
+  // ── 납부내역 (회차 테이블, <details> 접기/펼치기) ──
+  const cycles  = Array.isArray(d.cycles) ? d.cycles : [];
+  const todaySt = new Date().toISOString().slice(0, 10);
+  const fmtMD   = s => { if(!s) return '-'; const p=s.split('-'); return `${+p[1]}.${+p[2]}`; };
+  const cycleRows = cycles.map((c, i) => {
+    const isFuture = c.start > todaySt;
+    let stTxt, rowBg = '';
+    if      (c.paid)               { stTxt = `<span style="color:var(--green);font-weight:700">✓</span>`;   rowBg = 'var(--green-bg)'; }
+    else if (isFuture)             { stTxt = `<span style="color:var(--text3)">⋯</span>`; }
+    else if (c.collected > 0)      { stTxt = `<span style="color:var(--amber);font-weight:700">△</span>`;   rowBg = 'var(--amber-bg)'; }
+    else                           { stTxt = `<span style="color:var(--red);font-weight:700">✗</span>`;     rowBg = 'var(--red-bg)'; }
+    return `<tr style="background:${rowBg};border-top:1px solid var(--border)">
+      <td style="padding:5px 8px;font-size:11px;color:var(--text2);white-space:nowrap">${i+1}회&nbsp;${fmtMD(c.start)}~${fmtMD(c.end)}</td>
+      <td style="padding:5px 8px;text-align:right;font-size:11px">${fmtS(c.required)}</td>
+      <td style="padding:5px 8px;text-align:right;font-size:11px;color:${c.directCollected > 0 ? 'var(--green)' : 'var(--text3)'}">${c.directCollected > 0 ? fmtS(c.directCollected) : '-'}</td>
+      <td style="padding:5px 8px;text-align:center">${stTxt}${c.shortage > 0 ? `<div style="font-size:9px;color:var(--red)">${fmtS(c.shortage)}</div>` : ''}</td>
+    </tr>`;
+  }).join('');
+  const cyclesHtml = cycles.length && d.status !== 'free' ? `
+    <details style="margin-bottom:14px">
+      <summary style="cursor:pointer;padding:10px 0;font-size:13px;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border)">
+        🗓 납부내역 (${cycles.length}회차)
+      </summary>
+      <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:10px">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:var(--bg)">
+            <th style="padding:6px 8px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">기간</th>
+            <th style="padding:6px 8px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">월세</th>
+            <th style="padding:6px 8px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">입금</th>
+            <th style="padding:6px 8px;text-align:center;font-size:11px;color:var(--text3);font-weight:600">상태</th>
+          </tr></thead>
+          <tbody>${cycleRows}</tbody>
+        </table>
+      </div>
+    </details>` : '';
 
   document.getElementById('roomModalContent').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
@@ -226,6 +314,9 @@ function openRoom(room) {
       <div class="info-row"><span class="info-lbl">계약종료일</span><span>${d.leaseEnd||'-'}</span></div>
       ${d.memo ? `<div class="info-row"><span class="info-lbl">메모</span><span style="font-size:12px">${d.memo}</span></div>` : ''}
     </div>
+    ${depHtml}
+    ${rentHtml}
+    ${cyclesHtml}
     <div class="section-title">요청사항</div>
     ${reqHtml}
   `;
