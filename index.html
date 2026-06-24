@@ -88,7 +88,7 @@ header h1{font-size:16px;font-weight:600}
 .nb-mtitle{font-size:15px;font-weight:700;margin-bottom:6px}
 .nb-mprev{font-size:13px;color:var(--text2);line-height:1.6;white-space:pre-wrap;word-break:break-all}
 .nb-mdate{font-size:11px;color:var(--text3);margin-top:8px}
-.nb-cb{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.nb-cb{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#f3f4f6;color:#374151}
 .nb-cb-수리{background:#fee2e2;color:#b91c1c}.nb-cb-전기{background:#fef3c7;color:#92400e}.nb-cb-인테리어{background:#dbeafe;color:#1e40af}.nb-cb-부동산{background:#d1fae5;color:#065f46}.nb-cb-청소{background:#ede9fe;color:#6d28d9}.nb-cb-기타{background:#f3f4f6;color:#374151}
 .nb-add-btn{width:100%;padding:14px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:14px}
 </style>
@@ -139,15 +139,7 @@ header h1{font-size:16px;font-weight:600}
   <!-- 연락처 섹션 -->
   <div id="nbContactsSection">
     <button class="nb-add-btn" onclick="nbOpenContact(null)">+ 업체 추가</button>
-    <div class="filter-row" id="nbCatFilterRow">
-      <button class="filter-btn on" onclick="nbCatFilter('전체',this)">전체</button>
-      <button class="filter-btn" onclick="nbCatFilter('수리',this)">수리</button>
-      <button class="filter-btn" onclick="nbCatFilter('전기',this)">전기</button>
-      <button class="filter-btn" onclick="nbCatFilter('인테리어',this)">인테리어</button>
-      <button class="filter-btn" onclick="nbCatFilter('부동산',this)">부동산</button>
-      <button class="filter-btn" onclick="nbCatFilter('청소',this)">청소</button>
-      <button class="filter-btn" onclick="nbCatFilter('기타',this)">기타</button>
-    </div>
+    <div class="filter-row" id="nbCatFilterRow"></div>
     <div id="nbContactsBody"></div>
   </div>
 
@@ -232,14 +224,7 @@ header h1{font-size:16px;font-weight:600}
     </div>
     <div style="margin-bottom:12px">
       <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">분류</label>
-      <div class="filter-row" id="nbCatBtns" style="margin-bottom:0">
-        <button onclick="nbSelectCat(this,'수리')"    class="filter-btn">수리</button>
-        <button onclick="nbSelectCat(this,'전기')"    class="filter-btn">전기</button>
-        <button onclick="nbSelectCat(this,'인테리어')" class="filter-btn">인테리어</button>
-        <button onclick="nbSelectCat(this,'부동산')"  class="filter-btn">부동산</button>
-        <button onclick="nbSelectCat(this,'청소')"    class="filter-btn">청소</button>
-        <button onclick="nbSelectCat(this,'기타')"    class="filter-btn on">기타</button>
-      </div>
+      <div class="filter-row" id="nbCatBtns" style="margin-bottom:0"></div>
       <input type="hidden" id="nb_cCat" value="기타">
     </div>
     <div style="margin-bottom:20px">
@@ -789,9 +774,13 @@ function renderNotice() {
 <script>
 // ════════════════ 수첩 (연락처·메모) ════════════════
 let _nbContacts = [], _nbMemos = [], _nbCatF = '전체', _nbSub = 'contacts', _nbEditCId = null, _nbEditMId = null;
+const NB_DEFAULT_CATS = ['수리','전기','인테리어','부동산','청소','기타'];
+let _nbCategories = [...NB_DEFAULT_CATS];
 
 db.collection('building').doc('contacts_data').onSnapshot(doc => {
-  _nbContacts = doc.exists ? (doc.data().contacts || []) : [];
+  _nbContacts   = doc.exists ? (doc.data().contacts   || [])               : [];
+  _nbCategories = doc.exists ? (doc.data().categories || NB_DEFAULT_CATS) : NB_DEFAULT_CATS;
+  nbRenderFilterRow();
   if (document.getElementById('tab-notebook')?.classList.contains('on') && _nbSub === 'contacts') nbRenderContacts();
 });
 db.collection('building').doc('memos_data').onSnapshot(doc => {
@@ -821,6 +810,54 @@ function nbEsc(s) {
 }
 
 // ── 연락처 ──
+function nbRenderCatBtns(selectedCat) {
+  const row = document.getElementById('nbCatBtns');
+  if (!row) return;
+  const sel = selectedCat || _nbCategories.at(-1) || '기타';
+  row.innerHTML = _nbCategories.map(cat =>
+    `<button onclick="nbSelectCat(this,'${nbEsc(cat)}')" class="filter-btn${cat===sel?' on':''}">${nbEsc(cat)}</button>`
+  ).join('') + `<button onclick="nbAddCategory()" class="filter-btn" style="color:var(--green);border-color:var(--green)">+ 분류</button>`;
+  document.getElementById('nb_cCat').value = sel;
+}
+function nbRenderFilterRow() {
+  const row = document.getElementById('nbCatFilterRow');
+  if (!row) return;
+  row.innerHTML = `<button class="filter-btn${_nbCatF==='전체'?' on':''}" onclick="nbCatFilter('전체',this)">전체</button>` +
+    _nbCategories.map(cat =>
+      `<button class="filter-btn${_nbCatF===cat?' on':''}" onclick="nbCatFilter('${nbEsc(cat)}',this)">${nbEsc(cat)}</button>`
+    ).join('');
+}
+function nbAddCategory() {
+  if (document.getElementById('nbNewCatInput')) { document.getElementById('nbNewCatText')?.focus(); return; }
+  const row = document.getElementById('nbCatBtns');
+  const wrap = document.createElement('div');
+  wrap.id = 'nbNewCatInput';
+  wrap.style.cssText = 'display:flex;gap:6px;align-items:center;margin-top:8px;width:100%';
+  wrap.innerHTML = `<input id="nbNewCatText" type="text" maxlength="10" placeholder="새 분류명 (최대 10자)" style="flex:1;padding:8px 12px;border:1.5px solid var(--green);border-radius:10px;font-size:14px;font-family:inherit;outline:none">
+    <button onclick="nbConfirmAddCategory()" style="padding:8px 14px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">추가</button>
+    <button onclick="document.getElementById('nbNewCatInput')?.remove()" style="padding:8px 10px;background:none;border:1px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer">✕</button>`;
+  row.after(wrap);
+  const inp = document.getElementById('nbNewCatText');
+  inp.focus();
+  inp.addEventListener('keydown', e => { if(e.key==='Enter') nbConfirmAddCategory(); if(e.key==='Escape') wrap.remove(); });
+}
+async function nbConfirmAddCategory() {
+  const input = document.getElementById('nbNewCatText');
+  const name = input?.value.trim();
+  if (!name) { alert('분류명을 입력하세요'); return; }
+  if (_nbCategories.includes(name)) { alert('이미 있는 분류입니다'); input?.focus(); return; }
+  _nbCategories = [..._nbCategories, name];
+  document.getElementById('nbNewCatInput')?.remove();
+  try {
+    await db.collection('building').doc('contacts_data').set({
+      contacts: _nbContacts, categories: _nbCategories,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    nbRenderCatBtns(name);
+    nbRenderFilterRow();
+  } catch(e) { alert('저장 실패: ' + e.message); _nbCategories = _nbCategories.filter(c => c !== name); }
+}
+
 function nbCatFilter(cat, el) {
   _nbCatF = cat;
   document.querySelectorAll('#nbCatFilterRow .filter-btn').forEach(b => b.classList.remove('on'));
@@ -865,7 +902,7 @@ function nbOpenContact(id) {
   document.getElementById('nb_cPerson').value = c?.person || '';
   document.getElementById('nb_cPhone').value  = c?.phone  || '';
   document.getElementById('nb_cNote').value   = c?.note   || '';
-  nbSelectCatByVal(c?.cat || '기타');
+  nbRenderCatBtns(c?.cat || _nbCategories.at(-1) || '기타');
   document.getElementById('nbCDelBtn').style.display = c ? 'block' : 'none';
   document.getElementById('nbContactModal').classList.add('open');
 }
@@ -899,7 +936,7 @@ async function nbSaveContact() {
   }
   try {
     await db.collection('building').doc('contacts_data').set({
-      contacts: _nbContacts, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      contacts: _nbContacts, categories: _nbCategories, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     nbCloseModal('nbContactModal');
   } catch(e) { alert('저장 실패: ' + e.message); }
@@ -910,7 +947,7 @@ async function nbDeleteContact() {
   _nbContacts = _nbContacts.filter(c => c.id !== _nbEditCId);
   try {
     await db.collection('building').doc('contacts_data').set({
-      contacts: _nbContacts, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      contacts: _nbContacts, categories: _nbCategories, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     nbCloseModal('nbContactModal');
   } catch(e) { alert('삭제 실패: ' + e.message); }
