@@ -815,7 +815,10 @@ function nbRenderCatBtns(selectedCat) {
   if (!row) return;
   const sel = selectedCat || _nbCategories.at(-1) || '기타';
   row.innerHTML = _nbCategories.map(cat =>
-    `<button onclick="nbSelectCat(this,'${nbEsc(cat)}')" class="filter-btn${cat===sel?' on':''}">${nbEsc(cat)}</button>`
+    `<span style="display:inline-flex;align-items:center;gap:3px">` +
+    `<button onclick="nbSelectCat(this,'${nbEsc(cat)}')" class="filter-btn${cat===sel?' on':''}">${nbEsc(cat)}</button>` +
+    (cat !== '기타' ? `<button onclick="nbDeleteCategory('${nbEsc(cat)}')" title="분류 삭제" style="flex:none;width:18px;height:18px;border-radius:50%;background:#ef4444;color:#fff;border:none;cursor:pointer;font-size:11px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center">✕</button>` : '') +
+    `</span>`
   ).join('') + `<button onclick="nbAddCategory()" class="filter-btn" style="color:var(--green);border-color:var(--green)">+ 분류</button>`;
   document.getElementById('nb_cCat').value = sel;
 }
@@ -856,6 +859,32 @@ async function nbConfirmAddCategory() {
     nbRenderCatBtns(name);
     nbRenderFilterRow();
   } catch(e) { alert('저장 실패: ' + e.message); _nbCategories = _nbCategories.filter(c => c !== name); }
+}
+async function nbDeleteCategory(cat) {
+  const affected = _nbContacts.filter(c => c.cat === cat).length;
+  const msg = affected > 0
+    ? `"${cat}" 분류를 삭제하면 업체 ${affected}개가 "기타"로 이동됩니다.\n계속하시겠습니까?`
+    : `"${cat}" 분류를 삭제하시겠습니까?`;
+  if (!confirm(msg)) return;
+  const prevCats = [..._nbCategories];
+  const prevContacts = [..._nbContacts];
+  _nbCategories = _nbCategories.filter(c => c !== cat);
+  _nbContacts = _nbContacts.map(c => c.cat === cat ? {...c, cat: '기타'} : c);
+  if (_nbCatF === cat) _nbCatF = '전체';
+  try {
+    await db.collection('building').doc('contacts_data').set({
+      contacts: _nbContacts, categories: _nbCategories,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    const cur = document.getElementById('nb_cCat')?.value;
+    nbRenderCatBtns(_nbCategories.includes(cur) ? cur : '기타');
+    nbRenderFilterRow();
+    nbRenderContacts();
+  } catch(e) {
+    alert('저장 실패: ' + e.message);
+    _nbCategories = prevCats;
+    _nbContacts = prevContacts;
+  }
 }
 
 function nbCatFilter(cat, el) {
