@@ -281,6 +281,12 @@ function renderNotices(items){
 
 // ══════ 시작: 이미 입력한 기기면 게이트 건너뜀 ══════
 (function init(){
+  // 주인용: 주소 뒤에 ?me 를 붙이면 게이트 없이 바로 보고, 방문기록도 남기지 않는다
+  if(location.search.indexOf('me') >= 0){
+    try{ localStorage.setItem(GATE_KEY, JSON.stringify({agency:'(주인)', name:'(주인)', phone:'-', at:Date.now(), owner:true})); }catch(e){}
+    enter();
+    return;
+  }
   let saved=null;
   try{ saved = JSON.parse(localStorage.getItem(GATE_KEY)||'null'); }catch(e){}
   if(saved && saved.agency && saved.phone){
