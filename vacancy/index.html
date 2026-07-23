@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>아늑한빌 공실 현황</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg:#faf9f6; --surface:#ffffff; --surface2:#f5f4f0; --border:#e5e2db;
+  --text:#2a2824; --text2:#6b6860; --text3:#9b9890;
+  --blue:#2563eb; --green:#16a34a; --red:#c0392b; --amber:#b5750a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-text-size-adjust:100%}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 60px}
+
+/* ── 헤더 ── */
+.hd{text-align:center;padding:22px 0 18px;border-bottom:2px solid var(--border);margin-bottom:20px}
+.hd h1{font-size:24px;font-weight:900;letter-spacing:-.5px}
+.hd .sub{font-size:13px;color:var(--text2);margin-top:7px;line-height:1.7}
+.hd .upd{font-size:11px;color:var(--text3);margin-top:8px}
+
+/* ── 요약 카드 ── */
+.summary{display:flex;gap:10px;margin-bottom:22px}
+.sc{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 8px;text-align:center}
+.sc .lbl{font-size:12px;color:var(--text3);font-weight:500}
+.sc .val{font-size:26px;font-weight:900;margin-top:3px}
+.sc .val.r{color:var(--red)} .sc .val.g{color:var(--green)} .sc .val.b{color:var(--blue)}
+
+/* ── 섹션 ── */
+.sec-title{font-size:15px;font-weight:700;margin:26px 0 12px;display:flex;align-items:center;gap:7px}
+.sec-title .cnt{font-size:12px;font-weight:500;color:var(--text3)}
+
+/* ── 호실 카드 그리드 (한눈에 스캔) ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px}
+.rc{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 13px;position:relative}
+.rc.move{border-style:dashed}
+.rc .room{font-size:20px;font-weight:900;letter-spacing:-.5px}
+.rc .price{margin-top:8px;font-size:14px}
+.rc .price .dep{color:var(--blue);font-weight:700}
+.rc .price .rent{font-weight:700}
+.rc .price .won{font-size:11px;color:var(--text3);font-weight:400}
+.rc .memo{margin-top:9px;font-size:12px;color:var(--amber);background:#fdf7ea;border-radius:8px;padding:5px 9px;word-break:break-all}
+.rc .tag{position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px}
+.rc .tag.now{background:#fdeeec;color:var(--red)}
+.rc .tag.soon{background:#fdf5e6;color:var(--amber)}
+.rc .date{margin-top:8px;font-size:12px;color:var(--amber);font-weight:600}
+
+.empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:15px;background:var(--surface);border:1px solid var(--border);border-radius:14px}
+
+/* ── 공지판 ── */
+.notice-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.notice-item{padding:13px 16px;border-bottom:1px solid var(--border);font-size:14px}
+.notice-item:last-child{border-bottom:none}
+.notice-item .txt{white-space:pre-wrap;word-break:break-word}
+.notice-item .at{font-size:11px;color:var(--text3);margin-top:4px}
+.notice-empty{padding:22px 16px;text-align:center;color:var(--text3);font-size:13px}
+
+/* ── 프린트 버튼 ── */
+.actions{margin-top:30px;text-align:center}
+.btn{font-family:inherit;font-size:14px;font-weight:700;padding:12px 26px;border-radius:12px;border:none;cursor:pointer;background:var(--green);color:#fff}
+.btn:active{opacity:.85}
+
+/* ── 게이트(첫 진입 입력) ── */
+.gate{position:fixed;inset:0;background:rgba(250,249,246,.97);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100}
+.gate-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:30px 26px;max-width:380px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.08)}
+.gate-card h2{font-size:19px;font-weight:900;text-align:center}
+.gate-card p{font-size:13px;color:var(--text2);text-align:center;margin:9px 0 22px;line-height:1.7}
+.gate-card label{display:block;font-size:12px;font-weight:700;color:var(--text2);margin:14px 0 5px}
+.gate-card input{width:100%;font-family:inherit;font-size:15px;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;outline:none;background:var(--surface2)}
+.gate-card input:focus{border-color:var(--blue);background:#fff}
+.gate-card .err{color:var(--red);font-size:12px;margin-top:10px;min-height:16px;text-align:center}
+.gate-card .go{width:100%;margin-top:20px;font-size:16px;font-weight:900;padding:14px;border-radius:12px;border:none;cursor:pointer;background:var(--blue);color:#fff}
+
+.loading{text-align:center;padding:60px 20px;color:var(--text3)}
+
+@media(max-width:400px){.grid{grid-template-columns:repeat(auto-fill,minmax(135px,1fr))}}
+
+/* ── 인쇄 ── */
+@media print{
+  body{background:#fff}
+  .actions,.gate{display:none!important}
+  .rc,.sc,.notice-box{box-shadow:none}
+  @page{margin:14mm}
+}
+</style>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<!-- ══════ 첫 진입 게이트 ══════ -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <h2>🏠 공실 현황 보기</h2>
+    <p>부동산 정보를 입력하시면<br>실시간 공실 현황을 보실 수 있습니다.</p>
+    <label>부동산 상호</label>
+    <input id="g_agency" type="text" placeholder="예: 아늑공인중개사" autocomplete="organization">
+    <label>담당자 이름</label>
+    <input id="g_name" type="text" placeholder="예: 홍길동" autocomplete="name">
+    <label>전화번호</label>
+    <input id="g_phone" type="tel" inputmode="numeric" placeholder="예: 010-1234-5678" autocomplete="tel">
+    <div class="err" id="g_err"></div>
+    <button class="go" onclick="submitGate()">공실 현황 보기</button>
+  </div>
+</div>
+
+<!-- ══════ 본문 ══════ -->
+<div class="wrap" id="main" style="display:none">
+  <div class="hd">
+    <h1>🏠 아늑한빌 공실 현황</h1>
+    <div class="sub">궐동 620-1 · 관리비 포함 (전기·가스·인터넷 별도)</div>
+    <div class="upd" id="updated"></div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="sec-title">🔑 즉시 입주 가능 <span class="cnt" id="cntNow"></span></div>
+  <div id="nowList"></div>
+
+  <div class="sec-title">📅 퇴실 예정 <span class="cnt" id="cntSoon"></span></div>
+  <div id="soonList"></div>
+
+  <div class="sec-title">📢 공지사항</div>
+  <div class="notice-box" id="notices"></div>
+
+  <div class="actions">
+    <button class="btn" onclick="window.print()">🖨️ 프린트 / PDF 저장</button>
+  </div>
+</div>
+
+<div class="loading" id="loading" style="display:none">불러오는 중…</div>
+
+<script>
+// ── Firebase (읽기 전용, 로그인 없음) ──
+firebase.initializeApp({
+  apiKey: "AIzaSyAcP5LuRuudHxWFVYSRwZXct8n-LJhKWY0",
+  authDomain: "building-1-30739.firebaseapp.com",
+  projectId: "building-1-30739",
+  storageBucket: "building-1-30739.firebasestorage.app",
+  messagingSenderId: "543983501440",
+  appId: "1:543983501440:web:eddb5f38c4d7619f6f6665"
+});
+const db = firebase.firestore();
+const GATE_KEY = 'vacancy_visitor_v1';
+
+// ══════ 게이트 ══════
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function submitGate(){
+  const agency = document.getElementById('g_agency').value.trim();
+  const name   = document.getElementById('g_name').value.trim();
+  const phoneRaw = document.getElementById('g_phone').value.trim();
+  const digits = phoneRaw.replace(/[^0-9]/g,'');
+  const err = document.getElementById('g_err');
+
+  if(!agency){ err.textContent='부동산 상호를 입력하세요.'; return; }
+  if(!name){ err.textContent='담당자 이름을 입력하세요.'; return; }
+  if(digits.length < 9 || digits.length > 11){ err.textContent='전화번호를 정확히 입력하세요.'; return; }
+  err.textContent='';
+
+  const info = { agency, name, phone: phoneRaw, at: Date.now() };
+  // 방문기록 저장(쓰기만) — 실패해도 열람은 허용
+  db.collection('visitors').add({
+    agency, name, phone: phoneRaw,
+    at: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(()=>{});
+
+  try{ localStorage.setItem(GATE_KEY, JSON.stringify(info)); }catch(e){}
+  enter();
+}
+
+function enter(){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('main').style.display='block';
+  startListening();
+}
+
+// ══════ 데이터 구독 ══════
+let _started = false;
+function startListening(){
+  if(_started) return; _started = true;
+
+  db.collection('public').doc('vacancy').onSnapshot(doc=>{
+    const d = doc.exists ? doc.data() : {};
+    renderVacancy(d.vacant||[], d.moveOuts||[], d.updatedAt);
+  }, ()=> renderVacancy([],[],null));
+
+  db.collection('public').doc('notices').onSnapshot(doc=>{
+    const items = (doc.exists && doc.data().items) ? doc.data().items : [];
+    renderNotices(items);
+  }, ()=> renderNotices([]));
+}
+
+// ══════ 렌더: 공실 ══════
+function fmtTime(ts){
+  let dt;
+  if(!ts) return '';
+  if(ts.toDate) dt = ts.toDate();
+  else if(typeof ts==='number') dt = new Date(ts);
+  else return '';
+  const p=n=>String(n).padStart(2,'0');
+  return `${dt.getFullYear()}.${p(dt.getMonth()+1)}.${p(dt.getDate())} ${p(dt.getHours())}:${p(dt.getMinutes())}`;
+}
+
+function moveOutLabel(dateStr){
+  const diff = Math.round((new Date(dateStr) - new Date(new Date().toISOString().slice(0,10)))/86400000);
+  if(isNaN(diff)) return '';
+  if(diff < 0) return `${Math.abs(diff)}일 지남`;
+  if(diff === 0) return '오늘';
+  if(diff <= 7) return `${diff}일 후`;
+  if(diff <= 14) return '약 2주 후';
+  if(diff <= 21) return '약 3주 후';
+  if(diff <= 45) return '약 1개월 후';
+  if(diff <= 75) return '약 2개월 후';
+  if(diff <= 105) return '약 3개월 후';
+  return `약 ${Math.round(diff/30)}개월 후`;
+}
+
+function priceHtml(dep, rent){
+  if(dep==null && rent==null) return '<div class="price" style="color:var(--text3);font-size:12px">문의</div>';
+  return `<div class="price"><span class="dep">보 ${dep??'-'}</span> / <span class="rent">월 ${rent??'-'}</span> <span class="won">만원</span></div>`;
+}
+
+function renderVacancy(vacant, moveOuts, updatedAt){
+  document.getElementById('updated').textContent = updatedAt ? '최종 업데이트: '+fmtTime(updatedAt) : '';
+
+  document.getElementById('summary').innerHTML = [
+    ['즉시 가능', vacant.length, 'r'],
+    ['퇴실 예정', moveOuts.length, 'b'],
+  ].map(([l,v,c])=>`<div class="sc"><div class="lbl">${l}</div><div class="val ${c}">${v}<span style="font-size:14px">실</span></div></div>`).join('');
+
+  // 즉시 입주 가능
+  document.getElementById('cntNow').textContent = vacant.length ? `${vacant.length}실` : '';
+  const nowEl = document.getElementById('nowList');
+  if(!vacant.length){
+    nowEl.innerHTML = '<div class="empty">현재 즉시 입주 가능한 공실이 없습니다 🎉</div>';
+  } else {
+    nowEl.innerHTML = '<div class="grid">'+vacant.slice().sort((a,b)=>String(a.room).localeCompare(String(b.room))).map(r=>`
+      <div class="rc">
+        <span class="tag now">즉시 가능</span>
+        <div class="room">${esc(r.room)}</div>
+        ${priceHtml(r.dep, r.rent)}
+        ${r.memo?`<div class="memo">${esc(r.memo)}</div>`:''}
+      </div>`).join('')+'</div>';
+  }
+
+  // 퇴실 예정
+  document.getElementById('cntSoon').textContent = moveOuts.length ? `${moveOuts.length}실` : '';
+  const soonEl = document.getElementById('soonList');
+  if(!moveOuts.length){
+    soonEl.innerHTML = '<div class="empty">예정된 퇴실이 없습니다.</div>';
+  } else {
+    soonEl.innerHTML = '<div class="grid">'+moveOuts.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(r=>`
+      <div class="rc move">
+        <span class="tag soon">퇴실 예정</span>
+        <div class="room">${esc(r.room)}</div>
+        ${priceHtml(r.dep, r.rent)}
+        <div class="date">📅 ${esc(r.date)} (${moveOutLabel(r.date)})</div>
+        ${r.memo?`<div class="memo">${esc(r.memo)}</div>`:''}
+      </div>`).join('')+'</div>';
+  }
+}
+
+// ══════ 렌더: 공지 ══════
+function renderNotices(items){
+  const el = document.getElementById('notices');
+  if(!items.length){
+    el.innerHTML = '<div class="notice-empty">등록된 공지가 없습니다.</div>';
+    return;
+  }
+  el.innerHTML = items.slice().sort((a,b)=>(b.at||0)-(a.at||0)).map(n=>`
+    <div class="notice-item">
+      <div class="txt">${esc(n.text)}</div>
+      <div class="at">${fmtTime(n.at)}</div>
+    </div>`).join('');
+}
+
+// ══════ 시작: 이미 입력한 기기면 게이트 건너뜀 ══════
+(function init(){
+  let saved=null;
+  try{ saved = JSON.parse(localStorage.getItem(GATE_KEY)||'null'); }catch(e){}
+  if(saved && saved.agency && saved.phone){
+    enter();
+  } else {
+    document.getElementById('gate').style.display='flex';
+  }
+})();
+</script>
+</body>
+</html>
