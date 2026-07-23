@@ -6,6 +6,7 @@
 <title>아빌라 관리</title>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <style>
 :root {
   --green:#1a7a5e; --green-bg:#e8f5f0; --green-bd:#9fd4c4;
@@ -268,6 +269,20 @@ header h1{font-size:16px;font-weight:600}
   </div>
 </div>
 
+<!-- ══════ 로그인 화면 (한 번 로그인하면 계속 유지) ══════ -->
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;background:#f5f4f0;z-index:9999;align-items:center;justify-content:center;padding:24px">
+  <div style="background:#fff;border:1px solid #e0ddd8;border-radius:16px;padding:28px 22px;width:100%;max-width:360px">
+    <div style="font-size:19px;font-weight:800;text-align:center;color:#15224a">🏠 아빌라 관리</div>
+    <div style="font-size:13px;color:#6b6860;text-align:center;margin:8px 0 20px;line-height:1.6">노트북 앱과 같은 이메일·비밀번호로<br>로그인하세요. 한 번만 하면 됩니다.</div>
+    <label style="font-size:12px;font-weight:700;color:#6b6860;display:block;margin-bottom:5px">이메일</label>
+    <input id="ph_email" type="email" autocomplete="username" inputmode="email" style="width:100%;padding:13px;border:1.5px solid #e0ddd8;border-radius:10px;font-size:15px;font-family:inherit;margin-bottom:12px">
+    <label style="font-size:12px;font-weight:700;color:#6b6860;display:block;margin-bottom:5px">비밀번호</label>
+    <input id="ph_pw" type="password" autocomplete="current-password" style="width:100%;padding:13px;border:1.5px solid #e0ddd8;border-radius:10px;font-size:15px;font-family:inherit" onkeydown="if(event.key==='Enter')phLogin()">
+    <div id="ph_err" style="color:#c0392b;font-size:12px;min-height:17px;margin-top:9px;text-align:center"></div>
+    <button onclick="phLogin()" style="width:100%;padding:15px;margin-top:6px;background:#15224a;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer">로그인</button>
+  </div>
+</div>
+
 <script>
 firebase.initializeApp({
   apiKey: "AIzaSyAcP5LuRuudHxWFVYSRwZXct8n-LJhKWY0",
@@ -278,6 +293,53 @@ firebase.initializeApp({
   appId: "1:543983501440:web:eddb5f38c4d7619f6f6665"
 });
 const db = firebase.firestore();
+
+/* ══════ 로그인 처리 ══════
+   보안규칙을 잠근 뒤에는 로그인해야 데이터를 볼 수 있다.
+   로그인 전에 데이터 구독을 걸면 거부되므로, 로그인된 뒤에 걸도록 미뤄둔다. */
+const _authQueue = [];
+let _authStarted = false;
+function whenSignedIn(fn) { if (_authStarted) fn(); else _authQueue.push(fn); }
+
+function _phShowLogin(show) {
+  const el = document.getElementById('loginOverlay');
+  if (el) el.style.display = show ? 'flex' : 'none';
+}
+
+firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+firebase.auth().onAuthStateChanged(user => {
+  if (user) {
+    _phShowLogin(false);
+    if (!_authStarted) {
+      _authStarted = true;
+      _authQueue.splice(0).forEach(fn => { try { fn(); } catch(e) { console.warn(e); } });
+    }
+  } else {
+    _phShowLogin(true);
+    const saved = localStorage.getItem('fb_saved_email');
+    const inp = document.getElementById('ph_email');
+    if (saved && inp && !inp.value) inp.value = saved;
+  }
+});
+
+function phLogin() {
+  const email = (document.getElementById('ph_email').value || '').trim();
+  const pw    = document.getElementById('ph_pw').value || '';
+  const err   = document.getElementById('ph_err');
+  if (!email || !pw) { err.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
+  err.textContent = '로그인 중…';
+  firebase.auth().signInWithEmailAndPassword(email, pw)
+    .then(() => { localStorage.setItem('fb_saved_email', email); err.textContent = ''; document.getElementById('ph_pw').value = ''; })
+    .catch(e => {
+      err.textContent = {
+        'auth/invalid-email':'이메일 형식을 확인하세요',
+        'auth/wrong-password':'비밀번호가 틀렸습니다',
+        'auth/user-not-found':'등록된 계정이 없습니다',
+        'auth/invalid-credential':'이메일 또는 비밀번호가 틀렸습니다',
+        'auth/network-request-failed':'인터넷 연결을 확인하세요'
+      }[e.code] || ('로그인 실패: ' + e.message);
+    });
+}
 
 const FLOORS = [
   {label:'1층 (상가)', rooms:['101(상가)','102(상가)']},
@@ -293,6 +355,7 @@ let _editReqId = null;
 const fmt = n => Number(n||0).toLocaleString('ko-KR') + '원';
 const fmtS = n => { n=Number(n||0); if(n>=10000) return Math.round(n/10000)+'만원'; return fmt(n); };
 
+whenSignedIn(() => {
 db.collection('building').doc('phone_data').onSnapshot(doc => {
   if (!doc.exists) { document.getElementById('syncStatus').textContent = '데이터 없음'; return; }
   _data = doc.data();
@@ -314,6 +377,7 @@ db.collection('building').doc('cleaning').onSnapshot(doc => {
   }
   renderRooms();
 });
+});   // ← whenSignedIn 끝
 
 function switchTab(tab, el) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
@@ -788,6 +852,7 @@ let _nbContacts = [], _nbMemos = [], _nbCatF = '전체', _nbSub = 'contacts', _n
 const NB_DEFAULT_CATS = ['수리','전기','인테리어','부동산','청소','기타'];
 let _nbCategories = [...NB_DEFAULT_CATS];
 
+whenSignedIn(() => {
 db.collection('building').doc('contacts_data').onSnapshot(doc => {
   _nbContacts   = doc.exists ? (doc.data().contacts   || [])               : [];
   _nbCategories = doc.exists ? (doc.data().categories || NB_DEFAULT_CATS) : NB_DEFAULT_CATS;
@@ -798,6 +863,7 @@ db.collection('building').doc('memos_data').onSnapshot(doc => {
   _nbMemos = doc.exists ? (doc.data().memos || []) : [];
   if (document.getElementById('tab-notebook')?.classList.contains('on') && _nbSub === 'memos') nbRenderMemos();
 });
+});   // ← whenSignedIn 끝
 
 function nbSwitchSub(sub, el) {
   _nbSub = sub;
@@ -1066,6 +1132,7 @@ function nbCloseModal(id) {
 // 노트북(PC) 앱이 열릴 때 납부 기록에 자동 반영한다. (기록 작성은 PC만)
 let _inboxDocs = [], _coreTenants = [];
 
+whenSignedIn(() => {
 db.collection('building').doc('core_data').onSnapshot(doc => {
   _coreTenants = doc.exists ? (doc.data().v2_tenants || []) : [];
   renderDeposits();
@@ -1074,6 +1141,7 @@ db.collection('deposit_inbox').onSnapshot(snap => {
   _inboxDocs = snap.docs.map(d => ({ fid: d.id, ...d.data() }));
   renderDeposits();
 });
+});   // ← whenSignedIn 끝
 
 // 알림 원문("입금 450,000원 천이슬 입출금(5753) 07.13 08:15" 형태) → {amount, sender, date, time} (읽기 실패 시 null)
 function parseDepositSms(raw) {
