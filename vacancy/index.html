@@ -77,6 +77,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 .loading{text-align:center;padding:60px 20px;color:var(--text3)}
 
+/* ── 아이콘 ── */
+.ic{width:1em;height:1em;vertical-align:-.15em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
 @media(max-width:400px){.grid{grid-template-columns:repeat(auto-fill,minmax(135px,1fr))}}
 
 /* ── 인쇄 ── */
@@ -92,10 +95,19 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 </head>
 <body>
 
+<svg style="position:absolute;width:0;height:0" aria-hidden="true">
+<symbol id="ic-home" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7"/><path d="M9 22V12h6v10"/><path d="M5 10v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/></symbol>
+<symbol id="ic-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6"/><path d="M15.5 7.5l3 3L22 7l-3-3"/></symbol>
+<symbol id="ic-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+<symbol id="ic-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+<symbol id="ic-printer" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+<symbol id="ic-check" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
+</svg>
+
 <!-- ══════ 첫 진입 게이트 ══════ -->
 <div class="gate" id="gate">
   <div class="gate-card">
-    <h2>🏠 공실 현황 보기</h2>
+    <h2><svg class="ic"><use href="#ic-home"/></svg> 공실 현황 보기</h2>
     <p>부동산 정보를 입력하시면<br>실시간 공실 현황을 보실 수 있습니다.</p>
     <label>부동산 상호</label>
     <input id="g_agency" type="text" placeholder="예: 아늑공인중개사" autocomplete="organization">
@@ -111,24 +123,24 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <!-- ══════ 본문 ══════ -->
 <div class="wrap" id="main" style="display:none">
   <div class="hd">
-    <h1>🏠 아늑한빌 공실 현황</h1>
+    <h1><svg class="ic"><use href="#ic-home"/></svg> 아늑한빌 공실 현황</h1>
     <div class="sub">궐동 620-1 · 관리비 포함 (전기·가스·인터넷 별도)</div>
     <div class="upd" id="updated"></div>
   </div>
 
   <div class="summary" id="summary"></div>
 
-  <div class="sec-title">🔑 즉시 입주 가능 <span class="cnt" id="cntNow"></span></div>
+  <div class="sec-title"><svg class="ic"><use href="#ic-key"/></svg> 즉시 입주 가능 <span class="cnt" id="cntNow"></span></div>
   <div id="nowList"></div>
 
-  <div class="sec-title">📅 퇴실 예정 <span class="cnt" id="cntSoon"></span></div>
+  <div class="sec-title"><svg class="ic"><use href="#ic-calendar"/></svg> 퇴실 예정 <span class="cnt" id="cntSoon"></span></div>
   <div id="soonList"></div>
 
-  <div class="sec-title">📢 공지사항</div>
+  <div class="sec-title"><svg class="ic"><use href="#ic-bell"/></svg> 공지사항</div>
   <div class="notice-box" id="notices"></div>
 
   <div class="actions">
-    <button class="btn" onclick="window.print()">🖨️ 프린트 / PDF 저장</button>
+    <button class="btn" onclick="window.print()"><svg class="ic"><use href="#ic-printer"/></svg> 프린트 / PDF 저장</button>
   </div>
 </div>
 
@@ -237,7 +249,7 @@ function renderVacancy(vacant, moveOuts, updatedAt){
   document.getElementById('cntNow').textContent = vacant.length ? `${vacant.length}실` : '';
   const nowEl = document.getElementById('nowList');
   if(!vacant.length){
-    nowEl.innerHTML = '<div class="empty">현재 즉시 입주 가능한 공실이 없습니다 🎉</div>';
+    nowEl.innerHTML = '<div class="empty"><svg class="ic" style="width:1.2em;height:1.2em"><use href="#ic-check"/></svg> 현재 즉시 입주 가능한 공실이 없습니다</div>';
   } else {
     nowEl.innerHTML = '<div class="grid">'+vacant.slice().sort((a,b)=>String(a.room).localeCompare(String(b.room))).map(r=>`
       <div class="rc">
@@ -259,7 +271,7 @@ function renderVacancy(vacant, moveOuts, updatedAt){
         <span class="tag soon">퇴실 예정</span>
         <div class="room">${esc(r.room)}</div>
         ${priceHtml(r.dep, r.rent)}
-        <div class="date">📅 ${esc(r.date)} (${moveOutLabel(r.date)})</div>
+        <div class="date"><svg class="ic"><use href="#ic-calendar"/></svg> ${esc(r.date)} (${moveOutLabel(r.date)})</div>
         ${r.memo?`<div class="memo">${esc(r.memo)}</div>`:''}
       </div>`).join('')+'</div>';
   }
