@@ -280,6 +280,9 @@ header h1{font-size:16px;font-weight:600}
     <input id="ph_pw" type="password" autocomplete="current-password" style="width:100%;padding:13px;border:1.5px solid #e0ddd8;border-radius:10px;font-size:15px;font-family:inherit" onkeydown="if(event.key==='Enter')phLogin()">
     <div id="ph_err" style="color:#c0392b;font-size:12px;min-height:17px;margin-top:9px;text-align:center"></div>
     <button onclick="phLogin()" style="width:100%;padding:15px;margin-top:6px;background:#15224a;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer">로그인</button>
+    <div style="text-align:center;margin-top:14px">
+      <a href="#" onclick="phForgotPassword();return false;" style="font-size:12px;color:#6b6860;text-decoration:underline">비밀번호를 잊으셨나요?</a>
+    </div>
   </div>
 </div>
 
@@ -338,6 +341,25 @@ function phLogin() {
         'auth/invalid-credential':'이메일 또는 비밀번호가 틀렸습니다',
         'auth/network-request-failed':'인터넷 연결을 확인하세요'
       }[e.code] || ('로그인 실패: ' + e.message);
+    });
+}
+
+function phForgotPassword() {
+  const email = (document.getElementById('ph_email').value || '').trim();
+  const err   = document.getElementById('ph_err');
+  if (!email) { err.style.color = '#c0392b'; err.textContent = '이메일을 먼저 입력하세요.'; return; }
+  err.style.color = '#6b6860';
+  err.textContent = '재설정 메일 보내는 중…';
+  firebase.auth().sendPasswordResetEmail(email)
+    .then(() => { err.style.color = '#188038'; err.textContent = '재설정 메일을 보냈습니다. 메일함을 확인하세요.'; })
+    .catch(e => {
+      err.style.color = '#c0392b';
+      err.textContent = {
+        'auth/invalid-email':'이메일 형식을 확인하세요',
+        'auth/user-not-found':'등록된 계정이 없습니다',
+        'auth/too-many-requests':'요청이 너무 많습니다. 잠시 후 다시 시도하세요.',
+        'auth/network-request-failed':'인터넷 연결을 확인하세요'
+      }[e.code] || ('재설정 메일 전송 실패: ' + e.message);
     });
 }
 
