@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>원룸관리</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="theme-color" content="#15224a">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -329,16 +333,19 @@ function phLogin() {
   const email = (document.getElementById('ph_email').value || '').trim();
   const pw    = document.getElementById('ph_pw').value || '';
   const err   = document.getElementById('ph_err');
-  if (!email || !pw) { err.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
+  if (!email || !pw) { err.style.color = '#c0392b'; err.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
+  err.style.color = '#6b6860';
   err.textContent = '로그인 중…';
   firebase.auth().signInWithEmailAndPassword(email, pw)
     .then(() => { localStorage.setItem('fb_saved_email', email); err.textContent = ''; document.getElementById('ph_pw').value = ''; })
     .catch(e => {
+      err.style.color = '#c0392b';
       err.textContent = {
         'auth/invalid-email':'이메일 형식을 확인하세요',
         'auth/wrong-password':'비밀번호가 틀렸습니다',
         'auth/user-not-found':'등록된 계정이 없습니다',
         'auth/invalid-credential':'이메일 또는 비밀번호가 틀렸습니다',
+        'auth/too-many-requests':'요청이 너무 많습니다. 잠시 후 다시 시도하세요.',
         'auth/network-request-failed':'인터넷 연결을 확인하세요'
       }[e.code] || ('로그인 실패: ' + e.message);
     });
