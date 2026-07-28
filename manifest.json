@@ -1,7 +1,7 @@
 {
-  "name": "아빌라 관리",
-  "short_name": "아빌라",
-  "description": "아빌라 건물 관리 앱",
+  "name": "원룸관리",
+  "short_name": "원룸관리",
+  "description": "아느칸빌 원룸 관리 앱",
   "start_url": "/avill-phone/",
   "display": "standalone",
   "background_color": "#15224a",

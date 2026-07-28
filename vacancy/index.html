@@ -100,9 +100,12 @@ body{
 }
 .memo-bubble::before{content:'';position:absolute;top:-5px;left:15px;width:10px;height:10px;background:var(--text);transform:rotate(45deg)}
 .rc.memo-open .memo-bubble{display:block}
-.rc .tag{position:absolute;top:13px;right:13px;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px}
+.tag-stack{position:absolute;top:13px;right:13px;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.rc .tag{font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px;white-space:nowrap}
 .rc .tag.now{background:#eef0d9;color:var(--g-now)}
 .rc .tag.soon{background:#fef1db;color:#8a5a00}
+.rc .tag.clean{background:#e6f4ea;color:var(--g-green);display:flex;align-items:center;gap:3px}
+.rc .tag.clean .ic{width:.85em;height:.85em}
 .rc .date{margin-top:9px;font-size:12px;color:#8a5a00;font-weight:700;display:flex;align-items:center;gap:5px}
 
 .empty{text-align:center;padding:38px 20px;color:var(--text3);font-size:14px;font-weight:600;background:var(--surface);border:1.5px dashed var(--border);border-radius:16px}
@@ -338,9 +341,12 @@ function priceHtml(dep, rent){
 }
 
 function roomCard(r, kind){
-  const tagHtml = kind==='now'
+  const statusTag = kind==='now'
     ? '<span class="tag now">즉시 가능</span>'
     : '<span class="tag soon">퇴실 예정</span>';
+  const cleanTag = r.clean
+    ? '<span class="tag clean"><svg class="ic"><use href="#ic-check"/></svg> 청소완료</span>'
+    : '';
   const dateHtml = kind==='soon'
     ? `<div class="date"><svg class="ic"><use href="#ic-calendar"/></svg> ${esc(r.date)} (${moveOutLabel(r.date)})</div>`
     : '';
@@ -350,7 +356,7 @@ function roomCard(r, kind){
     : '';
   return `<div class="rc${kind==='soon'?' move':''}${r.memo?' has-memo':''}">
     ${memoHtml}
-    ${tagHtml}
+    <div class="tag-stack">${statusTag}${cleanTag}</div>
     <div class="room">${esc(r.room)}</div>
     ${priceHtml(r.dep, r.rent)}
     ${dateHtml}
