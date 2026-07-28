@@ -4,89 +4,160 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>아늑한빌 공실 현황</title>
+<title>아느칸빌 공실 현황</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;700;800;900&display=swap');
 :root{
-  --bg:#faf9f6; --surface:#ffffff; --surface2:#f5f4f0; --border:#e5e2db;
-  --text:#2a2824; --text2:#6b6860; --text3:#9b9890;
-  --blue:#2563eb; --green:#16a34a; --red:#c0392b; --amber:#b5750a;
+  --bg:#ffffff; --surface:#ffffff; --surface2:#f6f6f4; --border:#e6e3db;
+  --text:#20201d; --text2:#68655d; --text3:#9c988e;
+  /* Google 4색 — 층별 구분용 */
+  --g-blue:#1a73e8; --g-red:#d93025; --g-yellow:#f2a600; --g-green:#188038;
+  /* 상태 강조색(즉시 가능) — 지하철 7호선 색(올리브그린) */
+  --g-now:#747F00;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-text-size-adjust:100%}
-.wrap{max-width:820px;margin:0 auto;padding:20px 16px 60px}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Gothic A1',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;
+  -webkit-text-size-adjust:100%;font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:860px;margin:0 auto;padding:22px 16px 60px}
 
 /* ── 헤더 ── */
-.hd{text-align:center;padding:22px 0 18px;border-bottom:2px solid var(--border);margin-bottom:20px}
-.hd h1{font-size:24px;font-weight:900;letter-spacing:-.5px}
-.hd .sub{font-size:13px;color:var(--text2);margin-top:7px;line-height:1.7}
-.hd .upd{font-size:11px;color:var(--text3);margin-top:8px}
+.hd{
+  position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--border);
+  border-radius:22px;padding:26px 22px 22px;margin-bottom:22px;
+  box-shadow:0 1px 3px rgba(20,20,10,.04);
+}
+.hd::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:6px;
+  background:linear-gradient(90deg,var(--g-blue) 0 25%,var(--g-red) 25% 50%,var(--g-yellow) 50% 75%,var(--g-green) 75% 100%);
+}
+.hd h1{font-size:23px;font-weight:900;letter-spacing:-.5px;display:flex;align-items:center;gap:8px}
+.hd .sub{font-size:13px;color:var(--text2);margin-top:8px;line-height:1.7}
+.hd .meta{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.hd .upd{font-size:11px;color:var(--text3)}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--g-green)}
+.live .dot{width:7px;height:7px;border-radius:50%;background:var(--g-green);animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(24,128,56,.4)}50%{opacity:.55;box-shadow:0 0 0 5px rgba(24,128,56,0)}}
 
 /* ── 요약 카드 ── */
-.summary{display:flex;gap:10px;margin-bottom:22px}
-.sc{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 8px;text-align:center}
-.sc .lbl{font-size:12px;color:var(--text3);font-weight:500}
-.sc .val{font-size:26px;font-weight:900;margin-top:3px}
-.sc .val.r{color:var(--red)} .sc .val.g{color:var(--green)} .sc .val.b{color:var(--blue)}
+.summary{display:flex;gap:10px;margin-bottom:26px}
+.sc{flex:1;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:16px;padding:15px 14px}
+.sc .lbl{font-size:12px;color:var(--text2);font-weight:700}
+.sc .val{font-size:28px;font-weight:900;margin-top:4px;color:var(--accent);letter-spacing:-.5px}
+.sc .val .u{font-size:13px;font-weight:700;color:var(--text3);margin-left:2px}
+.sc.r{--accent:var(--g-now)} .sc.b{--accent:var(--g-blue)}
 
-/* ── 섹션 ── */
-.sec-title{font-size:15px;font-weight:700;margin:26px 0 12px;display:flex;align-items:center;gap:7px}
-.sec-title .cnt{font-size:12px;font-weight:500;color:var(--text3)}
+/* ── 섹션 제목 ── */
+.sec-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800;margin:34px 0 14px}
+.sec-title .ic-wrap{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;background:var(--sbg);color:var(--sfg);flex:none}
+.sec-title .cnt{font-size:12px;font-weight:600;color:var(--text3);margin-left:auto}
+
+/* ── 층 그룹 ── */
+.floor-group{margin-bottom:6px}
+.floor-group + .floor-group{margin-top:20px}
+.floor-tag{
+  display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#fff;
+  background:var(--fc);padding:5px 13px 5px 11px;border-radius:99px;margin-bottom:11px;
+  letter-spacing:.2px;
+}
+.floor-tag::before{content:'';width:6px;height:6px;border-radius:50%;background:#fff;opacity:.85}
 
 /* ── 호실 카드 그리드 (한눈에 스캔) ── */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px}
-.rc{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 13px;position:relative}
-.rc.move{border-style:dashed}
-.rc .room{font-size:20px;font-weight:900;letter-spacing:-.5px}
-.rc .price{margin-top:8px;font-size:14px}
-.rc .price .dep{color:var(--blue);font-weight:700}
-.rc .price .rent{font-weight:700}
-.rc .price .won{font-size:11px;color:var(--text3);font-weight:400}
-.rc .memo{margin-top:9px;font-size:12px;color:var(--amber);background:#fdf7ea;border-radius:8px;padding:5px 9px;word-break:break-all}
-.rc .tag{position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px}
-.rc .tag.now{background:#fdeeec;color:var(--red)}
-.rc .tag.soon{background:#fdf5e6;color:var(--amber)}
-.rc .date{margin-top:8px;font-size:12px;color:var(--amber);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:11px}
+.rc{
+  position:relative;background:var(--surface);border:1px solid var(--border);
+  border-top:4px solid var(--fc,var(--border));border-radius:16px;padding:16px 14px 14px;
+  box-shadow:0 1px 2px rgba(20,20,10,.03);transition:transform .15s ease,box-shadow .15s ease;
+}
+@media(hover:hover){.rc:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(20,20,10,.09)}}
+.rc.move{border-top-style:dashed}
+.rc.has-memo{padding-top:44px}
+.rc .room{font-size:21px;font-weight:900;letter-spacing:-.5px}
+.rc .price{margin-top:9px;font-size:14px;font-weight:700}
+.rc .price .dep{color:var(--g-blue)}
+.rc .price .rent{color:var(--text)}
+.rc .price .won{font-size:11px;color:var(--text3);font-weight:500;margin-left:2px}
+.memo-btn{
+  position:absolute;top:12px;left:12px;width:20px;height:20px;border-radius:50%;
+  background:#ff3b30;border:none;color:#fff;font-family:inherit;font-size:11px;font-weight:900;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;line-height:1;
+  box-shadow:0 2px 6px rgba(255,59,48,.4);
+  animation:memo-float 2.2s ease-in-out infinite;
+}
+.memo-btn:active{transform:scale(.9);animation:none}
+@keyframes memo-float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-4px)}
+}
+.memo-bubble{
+  display:none;position:absolute;top:45px;left:13px;z-index:6;max-width:200px;
+  background:var(--text);color:#fff;font-size:12px;font-weight:600;line-height:1.55;
+  padding:9px 12px;border-radius:11px;box-shadow:0 10px 24px rgba(20,20,10,.22);word-break:break-word;
+}
+.memo-bubble::before{content:'';position:absolute;top:-5px;left:15px;width:10px;height:10px;background:var(--text);transform:rotate(45deg)}
+.rc.memo-open .memo-bubble{display:block}
+.rc .tag{position:absolute;top:13px;right:13px;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px}
+.rc .tag.now{background:#eef0d9;color:var(--g-now)}
+.rc .tag.soon{background:#fef1db;color:#8a5a00}
+.rc .date{margin-top:9px;font-size:12px;color:#8a5a00;font-weight:700;display:flex;align-items:center;gap:5px}
 
-.empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:15px;background:var(--surface);border:1px solid var(--border);border-radius:14px}
+.empty{text-align:center;padding:38px 20px;color:var(--text3);font-size:14px;font-weight:600;background:var(--surface);border:1.5px dashed var(--border);border-radius:16px}
 
 /* ── 공지판 ── */
-.notice-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.notice-item{padding:13px 16px;border-bottom:1px solid var(--border);font-size:14px}
+.notice-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(20,20,10,.03)}
+.notice-item{padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px}
 .notice-item:last-child{border-bottom:none}
 .notice-item .txt{white-space:pre-wrap;word-break:break-word}
-.notice-item .at{font-size:11px;color:var(--text3);margin-top:4px}
-.notice-empty{padding:22px 16px;text-align:center;color:var(--text3);font-size:13px}
+.notice-item .at{font-size:11px;color:var(--text3);margin-top:5px;font-weight:600}
+.notice-empty{padding:24px 16px;text-align:center;color:var(--text3);font-size:13px;font-weight:600}
 
 /* ── 프린트 버튼 ── */
-.actions{margin-top:30px;text-align:center}
-.btn{font-family:inherit;font-size:14px;font-weight:700;padding:12px 26px;border-radius:12px;border:none;cursor:pointer;background:var(--green);color:#fff}
-.btn:active{opacity:.85}
+.actions{margin-top:32px;text-align:center}
+.btn{
+  font-family:inherit;font-size:14px;font-weight:800;padding:13px 28px;border-radius:12px;border:none;
+  cursor:pointer;background:var(--g-green);color:#fff;display:inline-flex;align-items:center;gap:8px;
+  box-shadow:0 6px 16px rgba(24,128,56,.25);transition:transform .12s ease,box-shadow .12s ease;
+}
+.btn:active{transform:translateY(1px);box-shadow:0 2px 8px rgba(24,128,56,.25)}
 
 /* ── 게이트(첫 진입 입력) ── */
-.gate{position:fixed;inset:0;background:rgba(250,249,246,.97);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100}
-.gate-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:30px 26px;max-width:380px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.08)}
-.gate-card h2{font-size:19px;font-weight:900;text-align:center}
-.gate-card p{font-size:13px;color:var(--text2);text-align:center;margin:9px 0 22px;line-height:1.7}
-.gate-card label{display:block;font-size:12px;font-weight:700;color:var(--text2);margin:14px 0 5px}
-.gate-card input{width:100%;font-family:inherit;font-size:15px;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;outline:none;background:var(--surface2)}
-.gate-card input:focus{border-color:var(--blue);background:#fff}
-.gate-card .err{color:var(--red);font-size:12px;margin-top:10px;min-height:16px;text-align:center}
-.gate-card .go{width:100%;margin-top:20px;font-size:16px;font-weight:900;padding:14px;border-radius:12px;border:none;cursor:pointer;background:var(--blue);color:#fff}
+.gate{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;z-index:100;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(26,115,232,.14), transparent 45%),
+    radial-gradient(circle at 88% 12%, rgba(217,48,37,.12), transparent 45%),
+    radial-gradient(circle at 20% 88%, rgba(24,128,56,.12), transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(242,166,0,.14), transparent 45%),
+    var(--bg);
+}
+.gate-card{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:32px 28px;max-width:380px;width:100%;box-shadow:0 16px 48px rgba(20,20,10,.1);position:relative;overflow:hidden}
+.gate-card::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,var(--g-blue) 0 25%,var(--g-red) 25% 50%,var(--g-yellow) 50% 75%,var(--g-green) 75% 100%)}
+.gate-card h2{font-size:20px;font-weight:900;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px}
+.gate-card p{font-size:13px;color:var(--text2);text-align:center;margin:10px 0 24px;line-height:1.7}
+.gate-card label{display:block;font-size:12px;font-weight:800;color:var(--text2);margin:14px 0 6px}
+.gate-card input{width:100%;font-family:inherit;font-size:15px;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;outline:none;background:var(--surface2);transition:border-color .12s ease,background .12s ease}
+.gate-card input:focus{border-color:var(--g-blue);background:#fff}
+.gate-card .err{color:var(--g-red);font-size:12px;font-weight:700;margin-top:10px;min-height:16px;text-align:center}
+.gate-card .go{width:100%;margin-top:22px;font-size:16px;font-weight:900;padding:15px;border-radius:12px;border:none;cursor:pointer;background:var(--g-blue);color:#fff;box-shadow:0 8px 20px rgba(26,115,232,.3);transition:transform .12s ease}
+.gate-card .go:active{transform:translateY(1px)}
 
-.loading{text-align:center;padding:60px 20px;color:var(--text3)}
+.loading{text-align:center;padding:60px 20px;color:var(--text3);font-weight:600}
 
 /* ── 아이콘 ── */
 .ic{width:1em;height:1em;vertical-align:-.15em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
-@media(max-width:400px){.grid{grid-template-columns:repeat(auto-fill,minmax(135px,1fr))}}
+@media(max-width:400px){.grid{grid-template-columns:repeat(auto-fill,minmax(136px,1fr))}}
 
 /* ── 인쇄 ── */
 @media print{
   body{background:#fff}
   .actions,.gate{display:none!important}
-  .rc,.sc,.notice-box{box-shadow:none}
+  .rc,.sc,.notice-box,.hd{box-shadow:none}
+  .rc:hover{transform:none}
   @page{margin:14mm}
 }
 </style>
@@ -123,20 +194,23 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <!-- ══════ 본문 ══════ -->
 <div class="wrap" id="main" style="display:none">
   <div class="hd">
-    <h1><svg class="ic"><use href="#ic-home"/></svg> 아늑한빌 공실 현황</h1>
+    <h1><svg class="ic"><use href="#ic-home"/></svg> 아느칸빌 공실 현황</h1>
     <div class="sub">궐동 620-1 · 관리비 포함 (전기·가스·인터넷 별도)</div>
-    <div class="upd" id="updated"></div>
+    <div class="meta">
+      <span class="live"><span class="dot"></span> 실시간 연동</span>
+      <span class="upd" id="updated"></span>
+    </div>
   </div>
 
   <div class="summary" id="summary"></div>
 
-  <div class="sec-title"><svg class="ic"><use href="#ic-key"/></svg> 즉시 입주 가능 <span class="cnt" id="cntNow"></span></div>
+  <div class="sec-title"><span class="ic-wrap" style="--sbg:#e8f0fd;--sfg:var(--g-blue)"><svg class="ic"><use href="#ic-key"/></svg></span> 즉시 입주 가능 <span class="cnt" id="cntNow"></span></div>
   <div id="nowList"></div>
 
-  <div class="sec-title"><svg class="ic"><use href="#ic-calendar"/></svg> 퇴실 예정 <span class="cnt" id="cntSoon"></span></div>
+  <div class="sec-title"><span class="ic-wrap" style="--sbg:#fef1db;--sfg:#8a5a00"><svg class="ic"><use href="#ic-calendar"/></svg></span> 퇴실 예정 <span class="cnt" id="cntSoon"></span></div>
   <div id="soonList"></div>
 
-  <div class="sec-title"><svg class="ic"><use href="#ic-bell"/></svg> 공지사항</div>
+  <div class="sec-title"><span class="ic-wrap" style="--sbg:#e6f4ea;--sfg:var(--g-green)"><svg class="ic"><use href="#ic-bell"/></svg></span> 공지사항</div>
   <div class="notice-box" id="notices"></div>
 
   <div class="actions">
@@ -207,6 +281,32 @@ function startListening(){
   }, ()=> renderNotices([]));
 }
 
+// ══════ 층 구분 (Google 4색 순환) ══════
+const FLOOR_COLORS = ['var(--g-blue)','var(--g-red)','var(--g-yellow)','var(--g-green)'];
+function floorOf(room){
+  const digits = String(room).replace(/[^0-9]/g,'');
+  if(!digits) return '?';
+  return digits.length<=2 ? digits.slice(0,1) : digits.slice(0, digits.length-2);
+}
+function floorColor(floor){
+  const n = parseInt(floor,10);
+  if(isNaN(n)) return 'var(--text3)';
+  return FLOOR_COLORS[(n-1+FLOOR_COLORS.length*100)%FLOOR_COLORS.length];
+}
+function groupByFloor(rooms){
+  const map = new Map();
+  rooms.forEach(r=>{
+    const f = floorOf(r.room);
+    if(!map.has(f)) map.set(f, []);
+    map.get(f).push(r);
+  });
+  return [...map.entries()].sort((a,b)=>{
+    const na = parseInt(a[0],10), nb = parseInt(b[0],10);
+    if(isNaN(na) || isNaN(nb)) return String(a[0]).localeCompare(String(b[0]));
+    return na - nb;
+  });
+}
+
 // ══════ 렌더: 공실 ══════
 function fmtTime(ts){
   let dt;
@@ -233,48 +333,71 @@ function moveOutLabel(dateStr){
 }
 
 function priceHtml(dep, rent){
-  if(dep==null && rent==null) return '<div class="price" style="color:var(--text3);font-size:12px">문의</div>';
-  return `<div class="price"><span class="dep">보 ${dep??'-'}</span> / <span class="rent">월 ${rent??'-'}</span> <span class="won">만원</span></div>`;
+  if(dep==null && rent==null) return '<div class="price" style="color:var(--text3);font-size:12px;font-weight:600">문의</div>';
+  return `<div class="price"><span class="dep">보 ${dep??'-'}</span> / <span class="rent">월 ${rent??'-'}</span><span class="won">만원</span></div>`;
+}
+
+function roomCard(r, kind){
+  const tagHtml = kind==='now'
+    ? '<span class="tag now">즉시 가능</span>'
+    : '<span class="tag soon">퇴실 예정</span>';
+  const dateHtml = kind==='soon'
+    ? `<div class="date"><svg class="ic"><use href="#ic-calendar"/></svg> ${esc(r.date)} (${moveOutLabel(r.date)})</div>`
+    : '';
+  const memoHtml = r.memo
+    ? `<button type="button" class="memo-btn" onclick="toggleMemo(this,event)" aria-label="메모 보기">N</button>
+       <div class="memo-bubble">${esc(r.memo)}</div>`
+    : '';
+  return `<div class="rc${kind==='soon'?' move':''}${r.memo?' has-memo':''}">
+    ${memoHtml}
+    ${tagHtml}
+    <div class="room">${esc(r.room)}</div>
+    ${priceHtml(r.dep, r.rent)}
+    ${dateHtml}
+  </div>`;
+}
+
+// 메모 말풍선 토글 — 하나만 열리고, 다른 곳 터치하면 닫힘
+function toggleMemo(btn, ev){
+  ev.stopPropagation();
+  const card = btn.closest('.rc');
+  const wasOpen = card.classList.contains('memo-open');
+  document.querySelectorAll('.rc.memo-open').forEach(c=>c.classList.remove('memo-open'));
+  if(!wasOpen) card.classList.add('memo-open');
+}
+document.addEventListener('click', ()=>{
+  document.querySelectorAll('.rc.memo-open').forEach(c=>c.classList.remove('memo-open'));
+});
+
+function floorSectionsHtml(rooms, kind){
+  return groupByFloor(rooms).map(([floor, list])=>`
+    <div class="floor-group" style="--fc:${floorColor(floor)}">
+      <div class="floor-tag">${floor}층</div>
+      <div class="grid">${list.map(r=>roomCard(r,kind)).join('')}</div>
+    </div>`).join('');
 }
 
 function renderVacancy(vacant, moveOuts, updatedAt){
-  document.getElementById('updated').textContent = updatedAt ? '최종 업데이트: '+fmtTime(updatedAt) : '';
+  document.getElementById('updated').textContent = updatedAt ? '최종 업데이트 '+fmtTime(updatedAt) : '';
 
   document.getElementById('summary').innerHTML = [
     ['즉시 가능', vacant.length, 'r'],
     ['퇴실 예정', moveOuts.length, 'b'],
-  ].map(([l,v,c])=>`<div class="sc"><div class="lbl">${l}</div><div class="val ${c}">${v}<span style="font-size:14px">실</span></div></div>`).join('');
+  ].map(([l,v,c])=>`<div class="sc ${c}"><div class="lbl">${l}</div><div class="val">${v}<span class="u">실</span></div></div>`).join('');
 
   // 즉시 입주 가능
   document.getElementById('cntNow').textContent = vacant.length ? `${vacant.length}실` : '';
   const nowEl = document.getElementById('nowList');
-  if(!vacant.length){
-    nowEl.innerHTML = '<div class="empty"><svg class="ic" style="width:1.2em;height:1.2em"><use href="#ic-check"/></svg> 현재 즉시 입주 가능한 공실이 없습니다</div>';
-  } else {
-    nowEl.innerHTML = '<div class="grid">'+vacant.slice().sort((a,b)=>String(a.room).localeCompare(String(b.room))).map(r=>`
-      <div class="rc">
-        <span class="tag now">즉시 가능</span>
-        <div class="room">${esc(r.room)}</div>
-        ${priceHtml(r.dep, r.rent)}
-        ${r.memo?`<div class="memo">${esc(r.memo)}</div>`:''}
-      </div>`).join('')+'</div>';
-  }
+  nowEl.innerHTML = vacant.length
+    ? floorSectionsHtml(vacant.slice().sort((a,b)=>String(a.room).localeCompare(String(b.room))), 'now')
+    : '<div class="empty"><svg class="ic" style="width:1.2em;height:1.2em"><use href="#ic-check"/></svg> 현재 즉시 입주 가능한 공실이 없습니다</div>';
 
   // 퇴실 예정
   document.getElementById('cntSoon').textContent = moveOuts.length ? `${moveOuts.length}실` : '';
   const soonEl = document.getElementById('soonList');
-  if(!moveOuts.length){
-    soonEl.innerHTML = '<div class="empty">예정된 퇴실이 없습니다.</div>';
-  } else {
-    soonEl.innerHTML = '<div class="grid">'+moveOuts.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(r=>`
-      <div class="rc move">
-        <span class="tag soon">퇴실 예정</span>
-        <div class="room">${esc(r.room)}</div>
-        ${priceHtml(r.dep, r.rent)}
-        <div class="date"><svg class="ic"><use href="#ic-calendar"/></svg> ${esc(r.date)} (${moveOutLabel(r.date)})</div>
-        ${r.memo?`<div class="memo">${esc(r.memo)}</div>`:''}
-      </div>`).join('')+'</div>';
-  }
+  soonEl.innerHTML = moveOuts.length
+    ? floorSectionsHtml(moveOuts.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))), 'soon')
+    : '<div class="empty">예정된 퇴실이 없습니다.</div>';
 }
 
 // ══════ 렌더: 공지 ══════
