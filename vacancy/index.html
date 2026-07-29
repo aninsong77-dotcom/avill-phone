@@ -147,26 +147,6 @@ body{
 }
 .btn:active{transform:translateY(1px);box-shadow:0 2px 8px rgba(24,128,56,.25)}
 
-/* ── 게이트(첫 진입 입력) ── */
-.gate{
-  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;z-index:100;
-  background:
-    radial-gradient(circle at 12% 18%, rgba(26,115,232,.14), transparent 45%),
-    radial-gradient(circle at 88% 12%, rgba(116,127,0,.12), transparent 45%),
-    radial-gradient(circle at 20% 88%, rgba(24,128,56,.12), transparent 45%),
-    radial-gradient(circle at 85% 85%, rgba(242,166,0,.14), transparent 45%),
-    var(--bg);
-}
-.gate-card{background:var(--surface);border:none;border-radius:28px;padding:32px 28px;max-width:380px;width:100%;box-shadow:0 20px 56px rgba(15,45,75,.14);position:relative;overflow:hidden}
-.gate-card h2{font-size:20px;font-weight:900;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px}
-.gate-card p{font-size:13px;color:var(--text2);text-align:center;margin:10px 0 24px;line-height:1.7}
-.gate-card label{display:block;font-size:12px;font-weight:800;color:var(--text2);margin:14px 0 6px}
-.gate-card input{width:100%;font-family:inherit;font-size:15px;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;outline:none;background:var(--surface2);transition:border-color .12s ease,background .12s ease}
-.gate-card input:focus{border-color:var(--g-blue);background:#fff}
-.gate-card .err{color:var(--g-orange);font-size:12px;font-weight:700;margin-top:10px;min-height:16px;text-align:center}
-.gate-card .go{width:100%;margin-top:22px;font-size:16px;font-weight:900;padding:15px;border-radius:99px;border:none;cursor:pointer;background:var(--g-blue);color:#fff;box-shadow:0 10px 24px rgba(26,115,232,.32);transition:transform .12s ease}
-.gate-card .go:active{transform:translateY(1px)}
-
 .loading{text-align:center;padding:60px 20px;color:var(--text3);font-weight:600}
 
 /* ── 아이콘 ── */
@@ -177,7 +157,7 @@ body{
 /* ── 인쇄 ── */
 @media print{
   body{background:#fff}
-  .actions,.gate,.fav-btn,.fav-modal{display:none!important}
+  .actions,.fav-btn,.fav-modal{display:none!important}
   .rc,.sc,.notice-box,.hd{box-shadow:none}
   .rc:hover{transform:none}
   @page{margin:14mm}
@@ -197,22 +177,6 @@ body{
 <symbol id="ic-check" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
 <symbol id="ic-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
 </svg>
-
-<!-- ══════ 첫 진입 게이트 ══════ -->
-<div class="gate" id="gate">
-  <div class="gate-card">
-    <h2><svg class="ic"><use href="#ic-home"/></svg> 공실 현황 보기</h2>
-    <p>부동산 정보를 입력하시면<br>실시간 공실 현황을 보실 수 있습니다.</p>
-    <label>부동산 상호</label>
-    <input id="g_agency" type="text" placeholder="예: 아늑공인중개사" autocomplete="organization">
-    <label>담당자 이름</label>
-    <input id="g_name" type="text" placeholder="예: 홍길동" autocomplete="name">
-    <label>전화번호</label>
-    <input id="g_phone" type="tel" inputmode="numeric" placeholder="예: 010-1234-5678" autocomplete="tel">
-    <div class="err" id="g_err"></div>
-    <button class="go" onclick="submitGate()">공실 현황 보기</button>
-  </div>
-</div>
 
 <!-- ══════ 본문 ══════ -->
 <div class="wrap" id="main" style="display:none">
@@ -264,9 +228,8 @@ firebase.initializeApp({
   appId: "1:543983501440:web:eddb5f38c4d7619f6f6665"
 });
 const db = firebase.firestore();
-const GATE_KEY = 'vacancy_visitor_v1';
+const VISIT_KEY = 'vacancy_visit_day';   // 같은 기기는 하루 1번만 집계
 
-// ══════ 게이트 ══════
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 // ══════ 즐겨찾기 안내 ══════
@@ -292,31 +255,22 @@ function closeFavGuide(){
   document.getElementById('favModal').classList.remove('open');
 }
 
-function submitGate(){
-  const agency = document.getElementById('g_agency').value.trim();
-  const name   = document.getElementById('g_name').value.trim();
-  const phoneRaw = document.getElementById('g_phone').value.trim();
-  const digits = phoneRaw.replace(/[^0-9]/g,'');
-  const err = document.getElementById('g_err');
-
-  if(!agency){ err.textContent='부동산 상호를 입력하세요.'; return; }
-  if(!name){ err.textContent='담당자 이름을 입력하세요.'; return; }
-  if(digits.length < 9 || digits.length > 11){ err.textContent='전화번호를 정확히 입력하세요.'; return; }
-  err.textContent='';
-
-  const info = { agency, name, phone: phoneRaw, at: Date.now() };
-  // 방문기록 저장(쓰기만) — 실패해도 열람은 허용
-  db.collection('visitors').add({
-    agency, name, phone: phoneRaw,
-    at: firebase.firestore.FieldValue.serverTimestamp()
-  }).catch(()=>{});
-
-  try{ localStorage.setItem(GATE_KEY, JSON.stringify(info)); }catch(e){}
-  enter();
+// ══════ 방문 집계 (익명 — 이름·전화 안 받음) ══════
+// 같은 기기가 새로고침을 여러 번 해도 하루 1건만 남긴다.
+function countVisit(){
+  try{
+    const d = new Date();
+    const todayStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if(localStorage.getItem(VISIT_KEY) === todayStr) return;   // 오늘 이미 셈
+    localStorage.setItem(VISIT_KEY, todayStr);
+    db.collection('visitors').add({
+      anon: true,
+      at: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(()=>{});
+  }catch(e){}   // 집계 실패해도 열람은 그대로 진행
 }
 
 function enter(){
-  document.getElementById('gate').style.display='none';
   document.getElementById('main').style.display='block';
   startListening();
 }
@@ -482,21 +436,11 @@ function renderNotices(items){
     </div>`).join('');
 }
 
-// ══════ 시작: 이미 입력한 기기면 게이트 건너뜀 ══════
+// ══════ 시작: 들어오면 바로 공실 목록 ══════
 (function init(){
-  // 주인용: 주소 뒤에 ?me 를 붙이면 게이트 없이 바로 보고, 방문기록도 남기지 않는다
-  if(location.search.indexOf('me') >= 0){
-    try{ localStorage.setItem(GATE_KEY, JSON.stringify({agency:'(주인)', name:'(주인)', phone:'-', at:Date.now(), owner:true})); }catch(e){}
-    enter();
-    return;
-  }
-  let saved=null;
-  try{ saved = JSON.parse(localStorage.getItem(GATE_KEY)||'null'); }catch(e){}
-  if(saved && saved.agency && saved.phone){
-    enter();
-  } else {
-    document.getElementById('gate').style.display='flex';
-  }
+  // 주인용: 주소 뒤에 ?me 를 붙이면 방문 집계에 안 잡힌다
+  if(location.search.indexOf('me') < 0) countVisit();
+  enter();
 })();
 </script>
 </body>
