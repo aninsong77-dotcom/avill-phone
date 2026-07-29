@@ -83,17 +83,22 @@ body{
 .floor-tag::before{content:'';width:6px;height:6px;border-radius:50%;background:#fff;opacity:.85}
 
 /* ── 호실 카드 그리드 (한눈에 스캔) ── */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:11px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:11px}
 .rc{
   position:relative;background:var(--surface);border:none;
   border-top:4px solid var(--fc,var(--border));border-radius:20px;padding:16px 14px 14px;
   box-shadow:0 6px 18px rgba(15,45,75,.06);transition:transform .15s ease,box-shadow .15s ease;
+  display:flex;flex-direction:column;min-height:150px;padding-top:44px;
 }
 @media(hover:hover){.rc:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(15,45,75,.12)}}
 .rc.move{border-top-style:dashed}
-.rc.has-memo{padding-top:44px}
+.rc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
 .rc .room{font-size:21px;font-weight:900;letter-spacing:-.5px}
-.rc .price{margin-top:9px;font-size:14px;font-weight:700}
+.tag-row{display:flex;flex-direction:row;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:5px;flex:none}
+.price-block{margin-top:9px}
+.rc .price{font-size:13px;font-weight:700;display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
+.rc .price + .price{margin-top:4px}
+.rc .price .plabel{font-size:10px;font-weight:800;color:var(--text3);background:var(--surface2);padding:1px 6px;border-radius:6px;flex:none}
 .rc .price .dep{color:var(--g-blue)}
 .rc .price .rent{color:var(--text)}
 .rc .price .won{font-size:11px;color:var(--text3);font-weight:500;margin-left:2px}
@@ -116,13 +121,12 @@ body{
 }
 .memo-bubble::before{content:'';position:absolute;top:-5px;left:15px;width:10px;height:10px;background:var(--text);transform:rotate(45deg)}
 .rc.memo-open .memo-bubble{display:block}
-.tag-stack{position:absolute;top:13px;right:13px;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
-.rc .tag{font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.rc .tag{font-size:10px;font-weight:800;padding:0 9px;height:21px;border-radius:99px;white-space:nowrap;display:inline-flex;align-items:center;gap:3px;box-sizing:border-box}
 .rc .tag.now{background:#eef0d9;color:var(--g-now)}
 .rc .tag.soon{background:#fef1db;color:#8a5a00}
-.rc .tag.clean{background:#e6f4ea;color:var(--g-green);display:flex;align-items:center;gap:3px}
+.rc .tag.clean{background:#e6f4ea;color:var(--g-green)}
 .rc .tag.clean .ic{width:.85em;height:.85em}
-.rc .date{margin-top:9px;font-size:12px;color:#8a5a00;font-weight:700;display:flex;align-items:center;gap:5px}
+.rc .date{margin-top:auto;padding-top:9px;font-size:12px;color:#8a5a00;font-weight:700;display:flex;align-items:center;gap:5px}
 
 .empty{text-align:center;padding:38px 20px;color:var(--text3);font-size:14px;font-weight:600;background:var(--surface);border:1.5px dashed var(--border);border-radius:20px}
 
@@ -384,9 +388,16 @@ function moveOutLabel(dateStr){
   return `약 ${Math.round(diff/30)}개월 후`;
 }
 
-function priceHtml(dep, rent){
-  if(dep==null && rent==null) return '<div class="price" style="color:var(--text3);font-size:12px;font-weight:600">문의</div>';
-  return `<div class="price"><span class="dep">보 ${dep??'-'}</span> / <span class="rent">월 ${rent??'-'}</span><span class="won">만원</span></div>`;
+function priceRow(dep, rent, label){
+  const lb = label ? `<span class="plabel">${label}</span>` : '';
+  return `<div class="price">${lb}<span class="dep">보 ${dep??'-'}</span> / <span class="rent">월 ${rent??'-'}</span><span class="won">만원</span></div>`;
+}
+function priceHtml(r){
+  const hasShort = r.dep != null || r.rent != null;
+  const hasLong  = r.depL != null || r.rentL != null;
+  if(!hasShort && !hasLong) return '<div class="price" style="color:var(--text3);font-size:12px;font-weight:600">문의</div>';
+  if(hasShort && hasLong) return priceRow(r.dep, r.rent, '단기') + priceRow(r.depL, r.rentL, '장기');
+  return hasLong ? priceRow(r.depL, r.rentL, null) : priceRow(r.dep, r.rent, null);
 }
 
 function roomCard(r, kind){
@@ -405,9 +416,11 @@ function roomCard(r, kind){
     : '';
   return `<div class="rc${kind==='soon'?' move':''}${r.memo?' has-memo':''}">
     ${memoHtml}
-    <div class="tag-stack">${statusTag}${cleanTag}</div>
-    <div class="room">${esc(r.room)}</div>
-    ${priceHtml(r.dep, r.rent)}
+    <div class="rc-head">
+      <div class="room">${esc(r.room)}</div>
+      <div class="tag-row">${cleanTag}${statusTag}</div>
+    </div>
+    <div class="price-block">${priceHtml(r)}</div>
     ${dateHtml}
   </div>`;
 }
