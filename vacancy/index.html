@@ -10,49 +10,47 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;700;800;900&display=swap');
 :root{
-  --bg:#ffffff; --surface:#ffffff; --surface2:#f6f6f4; --border:#e6e3db;
+  --bg:#dcece4; --bg2:#eef6f1; --surface:#ffffff; --surface2:#f2f7f4; --border:#e6e3db;
   --text:#20201d; --text2:#68655d; --text3:#9c988e;
-  /* Google 4색 — 층별 구분용 */
-  --g-blue:#1a73e8; --g-red:#d93025; --g-yellow:#f2a600; --g-green:#188038;
-  /* 상태 강조색(즉시 가능) — 지하철 7호선 색(올리브그린) */
+  /* 층별 구분용 4색 (빨강·주황 제외 — 지하철 7호선 색으로 대체) */
+  --g-blue:#1a73e8; --g-orange:#747F00; --g-yellow:#f2a600; --g-green:#188038;
+  /* 상태 강조색(즉시 가능) — 지하철 7호선 색(올리브그린), 위 --g-orange 와 동일 */
   --g-now:#747F00;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{
-  font-family:'Gothic A1',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;
+  font-family:'Gothic A1',sans-serif;color:var(--text);line-height:1.6;
   -webkit-text-size-adjust:100%;font-variant-numeric:tabular-nums;
+  background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 340px,var(--bg2) 100%);
+  background-attachment:fixed;
 }
 .wrap{max-width:860px;margin:0 auto;padding:22px 16px 60px}
 
 /* ── 헤더 ── */
 .hd{
-  position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--border);
-  border-radius:22px;padding:26px 22px 22px;margin-bottom:22px;
-  box-shadow:0 1px 3px rgba(20,20,10,.04);
-}
-.hd::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:6px;
-  background:linear-gradient(90deg,var(--g-blue) 0 25%,var(--g-red) 25% 50%,var(--g-yellow) 50% 75%,var(--g-green) 75% 100%);
+  position:relative;overflow:hidden;background:var(--surface);border:none;
+  border-radius:28px;padding:28px 24px 24px;margin-bottom:18px;
+  box-shadow:0 12px 32px rgba(20,60,40,.10);
 }
 .hd h1{font-size:23px;font-weight:900;letter-spacing:-.5px;display:flex;align-items:center;gap:8px}
 .hd .sub{font-size:13px;color:var(--text2);margin-top:8px;line-height:1.7}
 .hd .meta{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
 .hd .upd{font-size:11px;color:var(--text3)}
-.live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--g-green)}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--g-green);background:var(--surface2);padding:5px 11px;border-radius:99px}
 .live .dot{width:7px;height:7px;border-radius:50%;background:var(--g-green);animation:pulse 1.8s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(24,128,56,.4)}50%{opacity:.55;box-shadow:0 0 0 5px rgba(24,128,56,0)}}
 
 /* ── 요약 카드 ── */
-.summary{display:flex;gap:10px;margin-bottom:26px}
-.sc{flex:1;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:16px;padding:15px 14px}
+.summary{display:flex;gap:12px;margin-bottom:22px}
+.sc{flex:1;background:var(--surface);border:none;border-radius:22px;padding:18px 18px 16px;box-shadow:0 8px 22px rgba(20,60,40,.07)}
 .sc .lbl{font-size:12px;color:var(--text2);font-weight:700}
-.sc .val{font-size:28px;font-weight:900;margin-top:4px;color:var(--accent);letter-spacing:-.5px}
+.sc .val{font-size:30px;font-weight:900;margin-top:6px;color:var(--accent);letter-spacing:-.5px}
 .sc .val .u{font-size:13px;font-weight:700;color:var(--text3);margin-left:2px}
 .sc.r{--accent:var(--g-now)} .sc.b{--accent:var(--g-blue)}
 
 /* ── 섹션 제목 ── */
-.sec-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800;margin:34px 0 14px}
+.sec-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800;margin:30px 4px 14px}
 .sec-title .ic-wrap{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;background:var(--sbg);color:var(--sfg);flex:none}
 .sec-title .cnt{font-size:12px;font-weight:600;color:var(--text3);margin-left:auto}
 
@@ -69,11 +67,11 @@ body{
 /* ── 호실 카드 그리드 (한눈에 스캔) ── */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:11px}
 .rc{
-  position:relative;background:var(--surface);border:1px solid var(--border);
-  border-top:4px solid var(--fc,var(--border));border-radius:16px;padding:16px 14px 14px;
-  box-shadow:0 1px 2px rgba(20,20,10,.03);transition:transform .15s ease,box-shadow .15s ease;
+  position:relative;background:var(--surface);border:none;
+  border-top:4px solid var(--fc,var(--border));border-radius:20px;padding:16px 14px 14px;
+  box-shadow:0 6px 18px rgba(20,60,40,.06);transition:transform .15s ease,box-shadow .15s ease;
 }
-@media(hover:hover){.rc:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(20,20,10,.09)}}
+@media(hover:hover){.rc:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(20,60,40,.12)}}
 .rc.move{border-top-style:dashed}
 .rc.has-memo{padding-top:44px}
 .rc .room{font-size:21px;font-weight:900;letter-spacing:-.5px}
@@ -83,9 +81,9 @@ body{
 .rc .price .won{font-size:11px;color:var(--text3);font-weight:500;margin-left:2px}
 .memo-btn{
   position:absolute;top:12px;left:12px;width:20px;height:20px;border-radius:50%;
-  background:#ff3b30;border:none;color:#fff;font-family:inherit;font-size:11px;font-weight:900;
+  background:#747F00;border:none;color:#fff;font-family:inherit;font-size:11px;font-weight:900;
   display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;line-height:1;
-  box-shadow:0 2px 6px rgba(255,59,48,.4);
+  box-shadow:0 2px 6px rgba(116,127,0,.4);
   animation:memo-float 2.2s ease-in-out infinite;
 }
 .memo-btn:active{transform:scale(.9);animation:none}
@@ -108,10 +106,10 @@ body{
 .rc .tag.clean .ic{width:.85em;height:.85em}
 .rc .date{margin-top:9px;font-size:12px;color:#8a5a00;font-weight:700;display:flex;align-items:center;gap:5px}
 
-.empty{text-align:center;padding:38px 20px;color:var(--text3);font-size:14px;font-weight:600;background:var(--surface);border:1.5px dashed var(--border);border-radius:16px}
+.empty{text-align:center;padding:38px 20px;color:var(--text3);font-size:14px;font-weight:600;background:var(--surface);border:1.5px dashed var(--border);border-radius:20px}
 
 /* ── 공지판 ── */
-.notice-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(20,20,10,.03)}
+.notice-box{background:var(--surface);border:none;border-radius:22px;overflow:hidden;box-shadow:0 8px 22px rgba(20,60,40,.07)}
 .notice-item{padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px}
 .notice-item:last-child{border-bottom:none}
 .notice-item .txt{white-space:pre-wrap;word-break:break-word}
@@ -121,9 +119,9 @@ body{
 /* ── 프린트 버튼 ── */
 .actions{margin-top:32px;text-align:center}
 .btn{
-  font-family:inherit;font-size:14px;font-weight:800;padding:13px 28px;border-radius:12px;border:none;
+  font-family:inherit;font-size:14px;font-weight:800;padding:13px 28px;border-radius:99px;border:none;
   cursor:pointer;background:var(--g-green);color:#fff;display:inline-flex;align-items:center;gap:8px;
-  box-shadow:0 6px 16px rgba(24,128,56,.25);transition:transform .12s ease,box-shadow .12s ease;
+  box-shadow:0 8px 20px rgba(24,128,56,.28);transition:transform .12s ease,box-shadow .12s ease;
 }
 .btn:active{transform:translateY(1px);box-shadow:0 2px 8px rgba(24,128,56,.25)}
 
@@ -132,20 +130,19 @@ body{
   position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;z-index:100;
   background:
     radial-gradient(circle at 12% 18%, rgba(26,115,232,.14), transparent 45%),
-    radial-gradient(circle at 88% 12%, rgba(217,48,37,.12), transparent 45%),
+    radial-gradient(circle at 88% 12%, rgba(116,127,0,.12), transparent 45%),
     radial-gradient(circle at 20% 88%, rgba(24,128,56,.12), transparent 45%),
     radial-gradient(circle at 85% 85%, rgba(242,166,0,.14), transparent 45%),
     var(--bg);
 }
-.gate-card{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:32px 28px;max-width:380px;width:100%;box-shadow:0 16px 48px rgba(20,20,10,.1);position:relative;overflow:hidden}
-.gate-card::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,var(--g-blue) 0 25%,var(--g-red) 25% 50%,var(--g-yellow) 50% 75%,var(--g-green) 75% 100%)}
+.gate-card{background:var(--surface);border:none;border-radius:28px;padding:32px 28px;max-width:380px;width:100%;box-shadow:0 20px 56px rgba(20,60,40,.14);position:relative;overflow:hidden}
 .gate-card h2{font-size:20px;font-weight:900;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px}
 .gate-card p{font-size:13px;color:var(--text2);text-align:center;margin:10px 0 24px;line-height:1.7}
 .gate-card label{display:block;font-size:12px;font-weight:800;color:var(--text2);margin:14px 0 6px}
-.gate-card input{width:100%;font-family:inherit;font-size:15px;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;outline:none;background:var(--surface2);transition:border-color .12s ease,background .12s ease}
+.gate-card input{width:100%;font-family:inherit;font-size:15px;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;outline:none;background:var(--surface2);transition:border-color .12s ease,background .12s ease}
 .gate-card input:focus{border-color:var(--g-blue);background:#fff}
-.gate-card .err{color:var(--g-red);font-size:12px;font-weight:700;margin-top:10px;min-height:16px;text-align:center}
-.gate-card .go{width:100%;margin-top:22px;font-size:16px;font-weight:900;padding:15px;border-radius:12px;border:none;cursor:pointer;background:var(--g-blue);color:#fff;box-shadow:0 8px 20px rgba(26,115,232,.3);transition:transform .12s ease}
+.gate-card .err{color:var(--g-orange);font-size:12px;font-weight:700;margin-top:10px;min-height:16px;text-align:center}
+.gate-card .go{width:100%;margin-top:22px;font-size:16px;font-weight:900;padding:15px;border-radius:99px;border:none;cursor:pointer;background:var(--g-blue);color:#fff;box-shadow:0 10px 24px rgba(26,115,232,.32);transition:transform .12s ease}
 .gate-card .go:active{transform:translateY(1px)}
 
 .loading{text-align:center;padding:60px 20px;color:var(--text3);font-weight:600}
@@ -285,7 +282,7 @@ function startListening(){
 }
 
 // ══════ 층 구분 (Google 4색 순환) ══════
-const FLOOR_COLORS = ['var(--g-blue)','var(--g-red)','var(--g-yellow)','var(--g-green)'];
+const FLOOR_COLORS = ['var(--g-blue)','var(--g-orange)','var(--g-yellow)','var(--g-green)'];
 function floorOf(room){
   const digits = String(room).replace(/[^0-9]/g,'');
   if(!digits) return '?';
