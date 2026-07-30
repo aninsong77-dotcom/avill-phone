@@ -100,7 +100,9 @@ body{
 .rc .price + .price{margin-top:4px}
 .rc .price .plabel{font-size:10px;font-weight:800;color:var(--text3);background:var(--surface2);padding:1px 6px;border-radius:6px;flex:none}
 .rc .price .dep{color:var(--g-blue)}
-.rc .price .dep .num{display:inline-block;width:3ch;text-align:right}
+/* 폭은 3자리로 고정해 방마다 '/' 위치를 맞추되, 숫자는 왼쪽에 붙인다.
+   오른쪽 정렬이면 두 자리 금액에서 '보'와 숫자 사이가 벌어져 어색했다. */
+.rc .price .dep .num{display:inline-block;width:3ch;text-align:left}
 .rc .price .rent{color:var(--text)}
 .rc .price .won{font-size:11px;color:var(--text3);font-weight:500;margin-left:2px}
 .memo-btn{
