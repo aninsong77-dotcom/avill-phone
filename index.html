@@ -525,7 +525,8 @@ function openRoom(room) {
     const isCurrent  = c.end >= todaySt;
     const notYetDue  = isCurrent && todayDay < parseInt(c.start.slice(8));
     let stTxt, rowBg = '';
-    if      (c.paid)                    { stTxt = `<span style="color:var(--green);font-weight:700">✓</span>`;   rowBg = 'var(--green-bg)'; }
+    if      (c.paid && c.late)          { stTxt = `<span style="color:#c98a00;font-weight:700">✓</span>`;      rowBg = '#fff8e1'; }
+    else if (c.paid)                    { stTxt = `<span style="color:var(--green);font-weight:700">✓</span>`;   rowBg = 'var(--green-bg)'; }
     else if (isFuture || notYetDue)     { stTxt = `<span style="color:var(--text3)">⋯</span>`; }
     else if (c.collected > 0)           { stTxt = `<span style="color:var(--amber);font-weight:700">△</span>`;   rowBg = 'var(--amber-bg)'; }
     else                                { stTxt = `<span style="color:var(--red);font-weight:700">✗</span>`;     rowBg = 'var(--red-bg)'; }
@@ -551,6 +552,44 @@ function openRoom(room) {
           </tr></thead>
           <tbody>${cycleRows}</tbody>
         </table>
+      </div>
+    </details>` : '';
+
+  // ── 입금 내역 (통장을 다시 안 봐도 되게: 입금일·입금자명·금액·어느 달로 갔는지) ──
+  const pays = d.pays || [];
+  const payRows = pays.map(p => {
+    const dd = p.d ? `${+p.d.slice(5,7)}.${+p.d.slice(8,10)}` : '-';
+    const yy = p.d ? p.d.slice(2,4) : '';
+    let used;
+    if (p.pre) used = `<span style="color:#7c3aed">입주 전 (월세 제외)</span>`;
+    else if (!p.u || !p.u.length) used = `<span style="color:var(--blue)">아직 배정 안 됨</span>`;
+    else used = p.u.map(u => `<span style="color:${u.late?'#c98a00':'var(--text2)'};white-space:nowrap">${+u.ym.slice(5,7)}월분${p.u.length>1?' '+fmtS(u.amount):''}</span>`).join(' · ');
+    return `<tr style="border-top:1px solid var(--border);${p.pre?'opacity:.6':''}">
+      <td style="padding:5px 8px;font-size:11px;white-space:nowrap">${yy}.${dd}</td>
+      <td style="padding:5px 8px;font-size:11px;color:var(--text2)">${p.n || '-'}</td>
+      <td style="padding:5px 8px;text-align:right;font-size:11px;color:var(--green);font-weight:600;white-space:nowrap">${fmtS(p.a)}</td>
+      <td style="padding:5px 8px;font-size:10px;line-height:1.6">${used}</td>
+    </tr>`;
+  }).join('');
+  const paysHtml = pays.length && d.status !== 'free' ? `
+    <details style="margin-bottom:14px">
+      <summary style="cursor:pointer;padding:10px 0;font-size:13px;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border)">
+        💳 입금 내역 (${pays.length}건)
+      </summary>
+      <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:10px">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:var(--bg)">
+            <th style="padding:6px 8px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">입금일</th>
+            <th style="padding:6px 8px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">입금자</th>
+            <th style="padding:6px 8px;text-align:right;font-size:11px;color:var(--text3);font-weight:600">금액</th>
+            <th style="padding:6px 8px;text-align:left;font-size:11px;color:var(--text3);font-weight:600">어느 달로</th>
+          </tr></thead>
+          <tbody>${payRows}</tbody>
+        </table>
+      </div>
+      <div style="font-size:10px;color:var(--text3);line-height:1.7;padding:8px 2px 0">
+        밀린 달부터 채워지므로 입금한 달과 다를 수 있습니다.
+        <span style="color:#c98a00">주황</span>은 두 달 이상 지나 채워진 달입니다.
       </div>
     </details>` : '';
 
@@ -586,7 +625,8 @@ function openRoom(room) {
       group.forEach((c,ci) => {
         const due = isDue(c);
         let dc,ds;
-        if(c.paid){dc='var(--green)';ds='●';}
+        if(c.paid && c.late){dc='#c98a00';ds='●';}
+        else if(c.paid){dc='var(--green)';ds='●';}
         else if(!due){dc='var(--text3)';ds='○';}
         else if(c.collected>0){dc='var(--amber)';ds='△';}
         else{dc='var(--red)';ds='✗';}
@@ -619,6 +659,7 @@ function openRoom(room) {
     ${rentHtml}
     ${dotsHtml}
     ${cyclesHtml}
+    ${paysHtml}
     <div class="section-title">요청사항</div>
     ${reqHtml}
   `;
