@@ -820,9 +820,11 @@ function renderNotice() {
     const smsCard = (r, type) => {
       const bg = type === 'overdue' ? 'background:var(--red-bg);border-color:var(--red-bd)' : 'background:var(--amber-bg);border-color:var(--amber-bd)';
       const badge = type === 'overdue' ? `<span class="badge br">연체</span>` : `<span class="badge ba">미납</span>`;
-      const msg = type === 'overdue'
+      // PC 에서 확정해 보낸 문구가 있으면 그것을 쓴다(양식 선택·직접 수정 반영).
+      // 없으면 아래 기본 문구로 만든다.
+      const msg = (r.msg && r.msg.trim()) ? r.msg : (type === 'overdue'
         ? `안녕하세요 ${r.tenantName}님,\n${r.room}호 월세가 ${month}월까지 연체되어 있습니다.\n누적 미납금: ${fmtN(r.shortage)}원\n빠른 납부 부탁드립니다.`
-        : `안녕하세요 ${r.tenantName}님,\n${r.room}호 ${month}월 월세가 미납되어 있습니다.\n미납금: ${fmtN(r.shortage)}원\n납부 부탁드립니다.`;
+        : `안녕하세요 ${r.tenantName}님,\n${r.room}호 ${month}월 월세가 미납되어 있습니다.\n미납금: ${fmtN(r.shortage)}원\n납부 부탁드립니다.`);
       const mid = 'msg_' + r.room.replace(/[^a-zA-Z0-9]/g,'_');
       return `<div class="req-card" style="${bg};margin-bottom:10px">
         <div class="req-top">
@@ -830,6 +832,7 @@ function renderNotice() {
           <span style="font-size:13px;font-weight:600">${r.tenantName}</span>
           ${badge}
           ${r.shortage > 0 ? `<span style="font-size:11px;color:var(--red);font-weight:600">${fmtN(r.shortage)}원</span>` : ''}
+          ${(r.msg && r.msg.trim()) ? '<span style="font-size:10px;color:var(--blue);font-weight:600">📱 PC에서 보낸 문구</span>' : ''}
         </div>
         ${r.phone ? `<div style="font-size:12px;color:var(--text2);margin-bottom:6px">📞 ${r.phone}</div>` : '<div style="font-size:12px;color:var(--red);margin-bottom:6px">번호 없음</div>'}
         <textarea id="${mid}" readonly style="width:100%;font-size:12px;line-height:1.7;border:1px solid var(--border);border-radius:6px;padding:8px;background:#fff;color:var(--text);resize:none;height:90px">${msg}</textarea>
