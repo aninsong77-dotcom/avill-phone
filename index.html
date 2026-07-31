@@ -138,24 +138,13 @@ header h1{font-size:16px;font-weight:600}
 </div>
 
 <div class="page" id="tab-notebook">
-  <!-- 서브탭 -->
-  <div class="nb-subtab-row">
-    <button class="nb-subtab on" onclick="nbSwitchSub('contacts',this)">📞 업체 연락처</button>
-    <button class="nb-subtab" onclick="nbSwitchSub('memos',this)">📝 메모</button>
-  </div>
-
-  <!-- 연락처 섹션 -->
+  <!-- 업체 연락처 (메모는 2026-07-31 제거 — 일정·요청이 그 일을 한다) -->
   <div id="nbContactsSection">
     <button class="nb-add-btn" onclick="nbOpenContact(null)">+ 업체 추가</button>
     <div class="filter-row" id="nbCatFilterRow"></div>
     <div id="nbContactsBody"></div>
   </div>
 
-  <!-- 메모 섹션 -->
-  <div id="nbMemosSection" style="display:none">
-    <button class="nb-add-btn" onclick="nbOpenMemo(null)">+ 메모 추가</button>
-    <div id="nbMemosBody"></div>
-  </div>
 </div>
 
 <div class="page" id="tab-deposit">
@@ -251,27 +240,6 @@ header h1{font-size:16px;font-weight:600}
     </div>
     <button onclick="nbSaveContact()" style="width:100%;padding:15px;background:#15224a;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer">저장</button>
     <button id="nbCDelBtn" onclick="nbDeleteContact()" style="display:none;width:100%;padding:13px;margin-top:10px;background:none;color:var(--red);border:1.5px solid var(--red-bd);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">이 업체 삭제</button>
-  </div>
-</div>
-
-<!-- 메모 등록/수정 모달 -->
-<div class="modal-overlay" id="nbMemoModal" onclick="if(event.target===this)nbCloseModal('nbMemoModal')">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <span id="nbMemoModalTitle" style="font-size:16px;font-weight:700">메모 추가</span>
-      <button onclick="nbCloseModal('nbMemoModal')" style="background:none;border:none;font-size:22px;color:var(--text3);cursor:pointer;padding:0 4px;line-height:1">✕</button>
-    </div>
-    <div style="margin-bottom:12px">
-      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">제목 (선택)</label>
-      <input id="nb_mTitle" type="text" placeholder="메모 제목" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit">
-    </div>
-    <div style="margin-bottom:20px">
-      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">내용 *</label>
-      <textarea id="nb_mContent" placeholder="메모 내용을 자유롭게 입력하세요" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;min-height:160px;resize:none;font-family:inherit;line-height:1.6"></textarea>
-    </div>
-    <button onclick="nbSaveMemo()" style="width:100%;padding:15px;background:#15224a;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer">저장</button>
-    <button id="nbMDelBtn" onclick="nbDeleteMemo()" style="display:none;width:100%;padding:13px;margin-top:10px;background:none;color:var(--red);border:1.5px solid var(--red-bd);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">이 메모 삭제</button>
   </div>
 </div>
 
@@ -807,6 +775,13 @@ function renderRequests() {
     : '<div class="empty">일정이 없습니다</div>';
 }
 
+// 문자앱을 열고 받는 사람·내용을 채워 준다. 보내기는 사용자가 직접 누른다.
+function sendSms(tel, id) {
+  const el = document.getElementById(id);
+  if (!tel) { alert('전화번호가 없습니다.'); return; }
+  location.href = 'sms:' + tel + '?body=' + encodeURIComponent(el ? el.value : '');
+}
+
 function copyMsg(id) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -858,7 +833,10 @@ function renderNotice() {
         </div>
         ${r.phone ? `<div style="font-size:12px;color:var(--text2);margin-bottom:6px">📞 ${r.phone}</div>` : '<div style="font-size:12px;color:var(--red);margin-bottom:6px">번호 없음</div>'}
         <textarea id="${mid}" readonly style="width:100%;font-size:12px;line-height:1.7;border:1px solid var(--border);border-radius:6px;padding:8px;background:#fff;color:var(--text);resize:none;height:90px">${msg}</textarea>
-        <button onclick="copyMsg('${mid}')" style="margin-top:6px;width:100%;padding:9px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">📋 복사</button>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button onclick="copyMsg('${mid}')" style="flex:1;padding:9px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">📋 복사</button>
+          ${r.phone ? `<button onclick="sendSms('${(r.phone||'').replace(/[^0-9+]/g,'')}','${mid}')" style="flex:2;padding:9px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">💬 문자 보내기</button>` : ''}
+        </div>
       </div>`;
     };
     if (overdue.length) html += overdue.map(r => smsCard(r,'overdue')).join('');
@@ -876,8 +854,8 @@ function renderNotice() {
 </script>
 
 <script>
-// ════════════════ 수첩 (연락처·메모) ════════════════
-let _nbContacts = [], _nbMemos = [], _nbCatF = '전체', _nbSub = 'contacts', _nbEditCId = null, _nbEditMId = null;
+// ════════════════ 수첩 (업체 연락처) ════════════════
+let _nbContacts = [], _nbCatF = '전체', _nbEditCId = null;
 const NB_DEFAULT_CATS = ['수리','전기','인테리어','부동산','청소','기타'];
 let _nbCategories = [...NB_DEFAULT_CATS];
 
@@ -886,23 +864,11 @@ db.collection('building').doc('contacts_data').onSnapshot(doc => {
   _nbContacts   = doc.exists ? (doc.data().contacts   || [])               : [];
   _nbCategories = doc.exists ? (doc.data().categories || NB_DEFAULT_CATS) : NB_DEFAULT_CATS;
   nbRenderFilterRow();
-  if (document.getElementById('tab-notebook')?.classList.contains('on') && _nbSub === 'contacts') nbRenderContacts();
-});
-db.collection('building').doc('memos_data').onSnapshot(doc => {
-  _nbMemos = doc.exists ? (doc.data().memos || []) : [];
-  if (document.getElementById('tab-notebook')?.classList.contains('on') && _nbSub === 'memos') nbRenderMemos();
+  if (document.getElementById('tab-notebook')?.classList.contains('on')) nbRenderContacts();
 });
 });   // ← whenSignedIn 끝
 
-function nbSwitchSub(sub, el) {
-  _nbSub = sub;
-  document.querySelectorAll('.nb-subtab').forEach(b => b.classList.remove('on'));
-  el.classList.add('on');
-  document.getElementById('nbContactsSection').style.display = sub === 'contacts' ? 'block' : 'none';
-  document.getElementById('nbMemosSection').style.display    = sub === 'memos'    ? 'block' : 'none';
-  if (sub === 'contacts') nbRenderContacts();
-  else nbRenderMemos();
-}
+
 
 function nbFmtPhone(p) {
   if (!p) return '';
@@ -1088,66 +1054,13 @@ async function nbDeleteContact() {
   } catch(e) { alert('삭제 실패: ' + e.message); }
 }
 
-// ── 메모 ──
-function nbRenderMemos() {
-  const list = [..._nbMemos].sort((a,b) => (b.updatedAt||'').localeCompare(a.updatedAt||''));
-  const el = document.getElementById('nbMemosBody');
-  if (!el) return;
-  if (!list.length) {
-    el.innerHTML = '<div class="empty">메모가 없습니다<br><span style="font-size:12px">위 버튼으로 추가하세요</span></div>';
-    return;
-  }
-  el.innerHTML = list.map(m => {
-    const preview = (m.content||'').slice(0,120);
-    const date    = m.updatedAt ? m.updatedAt.slice(0,10) : '';
-    return `<div class="nb-memo-card" onclick="nbOpenMemo('${m.id}')">
-      ${m.title ? `<div class="nb-mtitle">${nbEsc(m.title)}</div>` : ''}
-      <div class="nb-mprev">${nbEsc(preview)}${(m.content||'').length>120?'…':''}</div>
-      ${date ? `<div class="nb-mdate">✏️ ${date}</div>` : ''}
-    </div>`;
-  }).join('');
-}
 
-function nbOpenMemo(id) {
-  _nbEditMId = id;
-  const m = id ? _nbMemos.find(x => x.id === id) : null;
-  document.getElementById('nbMemoModalTitle').textContent = m ? '메모 수정' : '메모 추가';
-  document.getElementById('nb_mTitle').value   = m?.title   || '';
-  document.getElementById('nb_mContent').value = m?.content || '';
-  document.getElementById('nbMDelBtn').style.display = m ? 'block' : 'none';
-  document.getElementById('nbMemoModal').classList.add('open');
-}
 
-async function nbSaveMemo() {
-  const title   = document.getElementById('nb_mTitle').value.trim();
-  const content = document.getElementById('nb_mContent').value.trim();
-  if (!content) { alert('내용을 입력해주세요'); return; }
-  const now = new Date().toISOString();
-  if (_nbEditMId) {
-    const idx = _nbMemos.findIndex(m => m.id === _nbEditMId);
-    if (idx !== -1) Object.assign(_nbMemos[idx], { title, content, updatedAt: now });
-  } else {
-    const id = 'm_' + Date.now() + Math.random().toString(36).slice(2,5);
-    _nbMemos.push({ id, title, content, updatedAt: now });
-  }
-  try {
-    await db.collection('building').doc('memos_data').set({
-      memos: _nbMemos, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    nbCloseModal('nbMemoModal');
-  } catch(e) { alert('저장 실패: ' + e.message); }
-}
 
-async function nbDeleteMemo() {
-  if (!_nbEditMId || !confirm('이 메모를 삭제할까요?')) return;
-  _nbMemos = _nbMemos.filter(m => m.id !== _nbEditMId);
-  try {
-    await db.collection('building').doc('memos_data').set({
-      memos: _nbMemos, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    nbCloseModal('nbMemoModal');
-  } catch(e) { alert('삭제 실패: ' + e.message); }
-}
+
+
+
+
 
 function nbCloseModal(id) {
   document.getElementById(id).classList.remove('open');
