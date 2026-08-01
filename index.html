@@ -61,21 +61,34 @@ header h1{font-size:16px;font-weight:600}
 .info-lbl{color:var(--text2);font-size:12px}
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
 .bg{background:var(--green-bg);color:var(--green)}.ba{background:var(--amber-bg);color:var(--amber)}.br{background:var(--red-bg);color:var(--red)}.bk{background:#f3f4f6;color:#6b7280}
+.bb{background:var(--blue-bg);color:var(--blue)}.bp{background:#f3eefa;color:#6b3fa0}
 .req-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
 .req-top{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
 .req-room{font-weight:700;font-size:13px}
 .req-date{font-size:11px;color:var(--text3)}
 .req-content{font-size:13px;line-height:1.5}
 .req-feedback{font-size:12px;color:var(--text2);background:var(--bg);border-radius:6px;padding:7px 9px;margin-top:6px}
-.sched-row{display:flex;gap:10px;padding:10px;background:var(--surface);border-radius:10px;margin-bottom:8px;border:1px solid var(--border);align-items:flex-start}
-.sched-date{font-size:12px;font-weight:700;color:var(--text2);min-width:60px}
-.sched-info{flex:1}
-.sched-title{font-size:13px;font-weight:600}
-.sched-room{font-size:11px;color:var(--text3);margin-top:2px}
+/* 일정 카드 — 노트북 앱과 같은 모양 (날짜·호실·상태 줄 + 제목 + 메모 + 처리내용) */
+.sc-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
+.sc-card.past{background:var(--red-bg);border-color:var(--red-bd)}
+.sc-card.fresh{opacity:.62}
+.sc-top{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.sc-date{font-weight:700;font-size:13px}
+.sc-title{font-size:13px;line-height:1.5}
+.sc-memo{font-size:12px;color:var(--text2);background:var(--bg);border-left:3px solid var(--blue);border-radius:6px;padding:7px 9px;margin-top:6px;white-space:pre-wrap}
+.sc-done{font-size:12px;color:var(--text2);background:var(--green-bg);border-left:3px solid var(--green);border-radius:6px;padding:7px 9px;margin-top:6px;white-space:pre-wrap}
+.sc-memo b,.sc-done b{display:block;margin-bottom:2px}
+.sc-done b{color:var(--green)}
+.sc-wait{font-size:11px;color:var(--amber);margin-top:5px}
 .section-title{font-size:13px;font-weight:700;color:var(--text2);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.04em}
 .empty{text-align:center;color:var(--text3);padding:32px 0;font-size:13px}
 .shortage-txt{font-size:10px;color:var(--red);margin-top:2px}
 .loading{text-align:center;padding:48px;color:var(--text3)}
+/* 요청 / 일정 갈아 끼우는 줄 */
+.sub-tab-bar{display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:12px}
+.sub-tab{flex:1;padding:9px 0;border:none;background:none;border-radius:8px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit}
+.sub-tab.on{background:#15224a;color:#fff}
+.sub-cnt{font-size:11px;font-weight:500;opacity:.75}
 .filter-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
 .filter-btn{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:12px;cursor:pointer;color:var(--text2)}
 .filter-btn.on{background:#15224a;color:#fff;border-color:#15224a}
@@ -120,18 +133,34 @@ header h1{font-size:16px;font-weight:600}
 </div>
 
 <div class="page" id="tab-requests">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-    <div class="filter-row" id="reqFilterRow" style="flex:1;margin-bottom:0">
+  <!-- 요청과 일정을 눌러서 갈아 끼운다 (예전엔 일정을 보려면 한참 내려야 했다) -->
+  <div class="sub-tab-bar">
+    <button class="sub-tab on" id="subTabReq"   onclick="switchReqSub('req',this)">🔧 요청 <span id="subReqCnt" class="sub-cnt"></span></button>
+    <button class="sub-tab"    id="subTabSched" onclick="switchReqSub('sched',this)">📅 일정 <span id="subSchedCnt" class="sub-cnt"></span></button>
+  </div>
+
+  <button id="rqAddBtn" class="nb-add-btn" style="margin-bottom:12px" onclick="openAddForm()">+ 요청 등록</button>
+
+  <!-- 요청 -->
+  <div id="rqSecReq">
+    <div class="filter-row" id="reqFilterRow">
       <button class="filter-btn on" onclick="filterReqs('전체',this)">전체</button>
       <button class="filter-btn" onclick="filterReqs('접수',this)">접수</button>
       <button class="filter-btn" onclick="filterReqs('진행중',this)">진행중</button>
       <button class="filter-btn" onclick="filterReqs('완료',this)">완료</button>
     </div>
-    <button onclick="openReqForm(null)" style="flex:none;padding:7px 12px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">+ 추가</button>
+    <div id="reqsBody"><div class="loading">데이터 불러오는 중...</div></div>
   </div>
-  <div id="reqsBody"><div class="loading">데이터 불러오는 중...</div></div>
-  <div class="section-title">📅 일정</div>
-  <div id="schedsBody"></div>
+
+  <!-- 일정 -->
+  <div id="rqSecSched" style="display:none">
+    <div class="filter-row" id="schedFilterRow">
+      <button class="filter-btn on" onclick="filterScheds('예정',this)">예정</button>
+      <button class="filter-btn" onclick="filterScheds('완료',this)">완료</button>
+      <button class="filter-btn" onclick="filterScheds('전체',this)">전체</button>
+    </div>
+    <div id="schedsBody"><div class="loading">데이터 불러오는 중...</div></div>
+  </div>
 </div>
 
 <div class="page" id="tab-notice">
@@ -172,6 +201,11 @@ header h1{font-size:16px;font-weight:600}
       <span id="reqFormTitle" style="font-size:15px;font-weight:700">요청사항 등록</span>
       <button onclick="document.getElementById('reqFormModal').classList.remove('open')" style="background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:0 4px">✕</button>
     </div>
+    <!-- 무엇을 등록하는지 — 잘못 열었으면 여기서 바로 바꾼다 -->
+    <div class="sub-tab-bar" id="reqKindRow" style="margin-bottom:14px">
+      <button class="sub-tab on" type="button">🔧 요청</button>
+      <button class="sub-tab" type="button" onclick="switchAddKind('sched')">📅 일정</button>
+    </div>
     <div style="margin-bottom:12px">
       <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">호실</label>
       <select id="reqRoom" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface)">
@@ -205,6 +239,46 @@ header h1{font-size:16px;font-weight:600}
       </select>
     </div>
     <button id="reqFormBtn" onclick="savePhoneRequest()" style="width:100%;padding:14px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">등록하기</button>
+  </div>
+</div>
+
+<!-- 일정 등록 모달 (호실을 비우면 건물 전체 일정) -->
+<div class="modal-overlay" id="schedFormModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-size:15px;font-weight:700">일정 등록</span>
+      <button onclick="document.getElementById('schedFormModal').classList.remove('open')" style="background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:0 4px">✕</button>
+    </div>
+    <div class="sub-tab-bar" style="margin-bottom:14px">
+      <button class="sub-tab" type="button" onclick="switchAddKind('req')">🔧 요청</button>
+      <button class="sub-tab on" type="button">📅 일정</button>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">일정 제목 *</label>
+      <input id="scTitle" placeholder="예: 물탱크 청소, 보일러 AS 방문"
+        style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;font-family:inherit">
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">일정 날짜 *</label>
+      <input type="date" id="scDate"
+        style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface);box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">호실 <span style="font-weight:400;color:var(--text3)">— 비우면 건물 전체</span></label>
+      <select id="scRoom" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface)">
+        <option value="">건물 전체</option>
+      </select>
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">메모</label>
+      <textarea id="scMemo" placeholder="업체 연락처, 준비물 등"
+        style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-height:70px;resize:none;box-sizing:border-box;font-family:inherit"></textarea>
+    </div>
+    <button onclick="savePhoneSchedule()" style="width:100%;padding:14px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">등록하기</button>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:10px;line-height:1.5">
+      노트북 앱을 열면 일정 목록에 자동으로 들어갑니다.<br>완료 처리와 수정은 노트북 앱에서 합니다.
+    </div>
   </div>
 </div>
 
@@ -659,6 +733,7 @@ function openReqForm(room) {
   document.getElementById('reqFormTitle').textContent = '요청사항 등록';
   document.getElementById('reqFormBtn').textContent = '등록하기';
   document.getElementById('reqStatusRow').style.display = 'none';
+  document.getElementById('reqKindRow').style.display = '';      // 새로 만들 때만 종류를 고른다
   const sel = document.getElementById('reqRoom');
   const occupied = (_data?.rooms||[]).filter(r=>r.status!=='vacant').sort((a,b)=>a.room.localeCompare(b.room));
   sel.innerHTML = '<option value="">호실 선택</option>' + occupied.map(r=>`<option value="${r.room}">${r.room} (${r.tenantName})</option>`).join('');
@@ -677,6 +752,7 @@ function openReqEdit(id) {
   document.getElementById('reqFormTitle').textContent = '요청사항 수정';
   document.getElementById('reqFormBtn').textContent = '저장하기';
   document.getElementById('reqStatusRow').style.display = 'block';
+  document.getElementById('reqKindRow').style.display = 'none';   // 고치는 중엔 종류를 바꿀 수 없다
   const sel = document.getElementById('reqRoom');
   const occupied = (_data?.rooms||[]).filter(r=>r.status!=='vacant').sort((a,b)=>a.room.localeCompare(b.room));
   sel.innerHTML = '<option value="">호실 선택</option>' + occupied.map(rm=>`<option value="${rm.room}">${rm.room} (${rm.tenantName})</option>`).join('');
@@ -740,12 +816,86 @@ async function savePhoneRequest() {
   }
 }
 
+// ===== 일정 등록 (폰 → 노트북) =====
+// 요청과 똑같은 통로(phone_requests)로 보내되 kind:'sched' 를 붙인다.
+// 새 통로를 파면 Firebase 보안규칙을 다시 게시해야 해서, 이미 열린 길을 쓴다.
+function openSchedForm() {
+  document.getElementById('reqFormModal').classList.remove('open');
+  const sel = document.getElementById('scRoom');
+  const occupied = (_data?.rooms||[]).filter(r => r.status !== 'vacant').sort((a,b)=>a.room.localeCompare(b.room));
+  sel.innerHTML = '<option value="">건물 전체 (호실 없음)</option>' +
+    occupied.map(r => `<option value="${r.room}">${r.room} (${r.tenantName})</option>`).join('');
+  sel.value = '';
+  document.getElementById('scDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('scTitle').value = '';
+  document.getElementById('scMemo').value = '';
+  document.getElementById('schedFormModal').classList.add('open');
+}
+
+async function savePhoneSchedule() {
+  const title = document.getElementById('scTitle').value.trim();
+  const date  = document.getElementById('scDate').value;
+  const room  = document.getElementById('scRoom').value;
+  const memo  = document.getElementById('scMemo').value.trim();
+  if (!title) { alert('일정 제목을 입력해주세요'); return; }
+  if (!date)  { alert('일정 날짜를 골라주세요'); return; }
+  const id = 'ph_' + Date.now() + Math.random().toString(36).slice(2,6);
+  try {
+    await db.collection('phone_requests').doc(id).set({
+      id, kind: 'sched', room, date, title, memo, status: '예정', synced: false,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    if (_data) {
+      _data.schedules = _data.schedules || [];
+      _data.schedules.push({ id, room, date, title, memo, status: '예정', _pending: true });
+      renderRequests();
+    }
+    document.getElementById('schedFormModal').classList.remove('open');
+    alert('일정이 등록되었습니다.\n노트북 앱에서 자동으로 반영됩니다.');
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+
+// ===== 요청 / 일정 갈아 끼우기 =====
+let _reqSub = 'req';                 // 'req' | 'sched'
+let _schedFilter = '예정';           // '예정' | '완료' | '전체'
+const KEEP_DONE_DAYS = 7;            // 끝낸 일정을 '예정' 칸에 며칠 남겨 둘지 (노트북 앱과 동일)
+
+function switchReqSub(sub, el) {
+  _reqSub = sub;
+  document.querySelectorAll('.sub-tab-bar .sub-tab').forEach(b => {
+    if (b.id === 'subTabReq' || b.id === 'subTabSched') b.classList.remove('on');
+  });
+  if (el) el.classList.add('on');
+  document.getElementById('rqSecReq').style.display   = sub === 'req'   ? '' : 'none';
+  document.getElementById('rqSecSched').style.display = sub === 'sched' ? '' : 'none';
+  document.getElementById('rqAddBtn').textContent = sub === 'sched' ? '+ 일정 등록' : '+ 요청 등록';
+}
+
+// 지금 보고 있는 칸에 맞춰 등록 창을 연다
+function openAddForm() { _reqSub === 'sched' ? openSchedForm() : openReqForm(null); }
+
+// 등록 창 안에서 종류를 바꿀 때
+function switchAddKind(kind) { kind === 'sched' ? openSchedForm() : openReqFormFromSched(); }
+function openReqFormFromSched() {
+  document.getElementById('schedFormModal').classList.remove('open');
+  openReqForm(null);
+}
+
 function filterReqs(status, el) {
   _reqFilter = status;
   document.querySelectorAll('#reqFilterRow .filter-btn').forEach(b => b.classList.remove('on'));
   el.classList.add('on');
   renderRequests();
 }
+
+function filterScheds(v, el) {
+  _schedFilter = v;
+  document.querySelectorAll('#schedFilterRow .filter-btn').forEach(b => b.classList.remove('on'));
+  if (el) el.classList.add('on');
+  renderRequests();
+}
+
+const _daysTo = (from, to) => Math.round((new Date(to+'T00:00:00') - new Date(from+'T00:00:00')) / 86400000);
 
 function renderRequests() {
   if (!_data) return;
@@ -767,19 +917,49 @@ function renderRequests() {
     : '<div class="empty">요청사항이 없습니다</div>';
 
   const today = new Date().toISOString().slice(0,10);
-  const scheds = [...(_data.schedules||[])].sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  const all = _data.schedules || [];
+  // 끝낸 지 얼마 안 된 일정은 '예정' 칸에도 잠시 남겨 처리내용을 볼 수 있게 한다
+  const isFresh = s => s.status === '완료' && _daysTo(s.doneAt || s.date || today, today) <= KEEP_DONE_DAYS;
+  let scheds = _schedFilter === '전체' ? [...all]
+             : _schedFilter === '완료' ? all.filter(s => s.status === '완료')
+             :                           all.filter(s => s.status !== '완료' || isFresh(s));
+
+  if (_schedFilter === '완료') {
+    scheds.sort((a,b) => (b.doneAt||b.date||'').localeCompare(a.doneAt||a.date||''));
+  } else {
+    scheds.sort((a,b) => {
+      const ad = a.status === '완료' ? 1 : 0, bd = b.status === '완료' ? 1 : 0;
+      if (ad !== bd) return ad - bd;
+      return ad ? (b.doneAt||b.date||'').localeCompare(a.doneAt||a.date||'')
+                : (a.date||'').localeCompare(b.date||'');
+    });
+  }
+
+  // 탭에 붙는 개수 — 안 끝난 요청 / 안 끝난 일정
+  const reqOpen = (_data.requests||[]).filter(r => r.status !== '완료').length;
+  const scOpen  = all.filter(s => s.status !== '완료').length;
+  document.getElementById('subReqCnt').textContent   = reqOpen ? reqOpen : '';
+  document.getElementById('subSchedCnt').textContent = scOpen ? scOpen : '';
+
   document.getElementById('schedsBody').innerHTML = scheds.length
     ? scheds.map(s => {
-        const past = s.date < today;
-        return `<div class="sched-row" style="${past ? 'opacity:.55' : ''}">
-          <div class="sched-date">${s.date||''}</div>
-          <div class="sched-info">
-            <div class="sched-title">${s.title}</div>
-            <div class="sched-room">${s.room} · <span class="badge ${s.status==='완료'?'bg':'ba'}">${s.status}</span></div>
+        const done = s.status === '완료';
+        const past = !done && (s.date||'') < today;
+        const late = past ? _daysTo(s.date, today) : 0;
+        return `<div class="sc-card ${past ? 'past' : ''} ${done && _schedFilter === '예정' ? 'fresh' : ''}">
+          <div class="sc-top">
+            <span class="sc-date">${s.date||''}</span>
+            <span class="badge ${s.room ? 'bb' : 'bp'}">${s.room || '건물 전체'}</span>
+            <span class="badge ${done ? 'bg' : 'ba'}">${s.status||'예정'}</span>
+            ${past ? `<span class="badge br">${late}일 지남</span>` : ''}
           </div>
+          <div class="sc-title">${s.title||''}</div>
+          ${s.memo ? `<div class="sc-memo"><b>메모</b>${s.memo}</div>` : ''}
+          ${done && s.doneNote ? `<div class="sc-done"><b>✓ 처리내용${s.doneAt ? ' · ' + s.doneAt : ''}</b>${s.doneNote}</div>` : ''}
+          ${s._pending ? `<div class="sc-wait">노트북 앱을 열면 반영됩니다</div>` : ''}
         </div>`;
       }).join('')
-    : '<div class="empty">일정이 없습니다</div>';
+    : `<div class="empty">${_schedFilter === '완료' ? '끝난 일정이 없습니다' : '일정이 없습니다'}</div>`;
 }
 
 // 문자앱을 열고 받는 사람·내용을 채워 준다. 보내기는 사용자가 직접 누른다.
