@@ -874,7 +874,7 @@ db.collection('building').doc('contacts_data').onSnapshot(doc => {
   _nbContacts   = doc.exists ? (doc.data().contacts   || [])               : [];
   _nbCategories = doc.exists ? (doc.data().categories || NB_DEFAULT_CATS) : NB_DEFAULT_CATS;
   nbRenderFilterRow();
-  if (document.getElementById('tab-notebook')?.classList.contains('on')) nbRenderContacts();
+  nbRenderContacts();   // 탭이 열려 있든 아니든 미리 그려 둔다 (열었을 때 바로 보이게)
 });
 });   // ← whenSignedIn 끝
 
