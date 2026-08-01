@@ -111,6 +111,7 @@ header h1{font-size:16px;font-weight:600}
   <button class="tab-btn" onclick="switchTab('requests',this)">요청/일정</button>
   <button class="tab-btn" onclick="switchTab('notice',this)">공지</button>
   <button class="tab-btn" onclick="switchTab('notebook',this)">수첩</button>
+  <button class="tab-btn" onclick="switchTab('ops',this)">메모</button>
   <button class="tab-btn" onclick="switchTab('deposit',this)">입금<span id="depositBadge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:3px;vertical-align:1px"></span></button>
 </div>
 
@@ -145,6 +146,12 @@ header h1{font-size:16px;font-weight:600}
     <div id="nbContactsBody"></div>
   </div>
 
+</div>
+
+<div class="page" id="tab-ops">
+  <input id="opsQ" placeholder="찾기 — 예: 도배, 전등" oninput="renderOps()"
+    style="width:100%;padding:9px 12px;font-size:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;font-family:inherit">
+  <div id="opsBody"><div class="loading">데이터 불러오는 중...</div></div>
 </div>
 
 <div class="page" id="tab-deposit">
@@ -1076,11 +1083,14 @@ function nbCloseModal(id) {
 // 여기서 파싱·호실매칭 후 사용자가 ✅ 확인하면 status:'approved' →
 // 노트북(PC) 앱이 열릴 때 납부 기록에 자동 반영한다. (기록 작성은 PC만)
 let _inboxDocs = [], _coreTenants = [];
+let _opsNotes = [], _opsOpen = {};   // 운영 메모 (아래 renderOps 가 쓴다)
 
 whenSignedIn(() => {
 db.collection('building').doc('core_data').onSnapshot(doc => {
   _coreTenants = doc.exists ? (doc.data().v2_tenants || []) : [];
+  _opsNotes    = doc.exists ? (doc.data().v6_ops_notes || []) : [];   // 운영 메모 (PC 에서 씀)
   renderDeposits();
+  renderOps();
 });
 db.collection('deposit_inbox').onSnapshot(snap => {
   _inboxDocs = snap.docs.map(d => ({ fid: d.id, ...d.data() }));
@@ -1142,6 +1152,44 @@ function depMatchTenant(senderName) {
       return nums.some(p => content.includes(p));
     });
   }) || null;
+}
+
+// ════════════════ 운영 메모 (PC 에서 적은 건물 운영 요령) ════════════════
+// 폰에서는 보기만 한다. 고치는 것은 PC 앱에서.
+function opsToggle(id){ _opsOpen[id] = !_opsOpen[id]; renderOps(); }
+
+function renderOps(){
+  const box = document.getElementById('opsBody'); if (!box) return;
+  const q = (document.getElementById('opsQ') || {}).value || '';
+  const k = q.trim().toLowerCase();
+  const list = (_opsNotes || []).filter(n => n && (!k ||
+    ((n.title||'') + ' ' + (n.body||'') + ' ' + (n.cat||'') + ' ' +
+     (n.vendor||'') + ' ' + (n.tel||'')).toLowerCase().includes(k)));
+  if (!list.length) {
+    box.innerHTML = '<div class="empty">' + (k ? '찾는 내용이 없습니다.' : '적어 둔 메모가 없습니다.') + '</div>';
+    return;
+  }
+  const cats = [];
+  list.forEach(n => { if (!cats.includes(n.cat)) cats.push(n.cat); });
+  box.innerHTML = cats.map(c => {
+    const rows = list.filter(n => n.cat === c).map(n => {
+      const open = !!_opsOpen[n.id];
+      const tel = (n.tel || '').trim();
+      return `<div style="border:1px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:6px;overflow:hidden">
+        <div onclick="opsToggle('${n.id}')" style="padding:11px 13px;display:flex;align-items:center;gap:8px;cursor:pointer">
+          <b style="font-size:14px;flex:1">${nbEsc(n.title||'')}</b>
+          ${n.vendor ? `<span style="font-size:11px;color:var(--text2)">${nbEsc(n.vendor)}</span>` : ''}
+          <span style="color:var(--text2);font-size:12px">${open ? '▾' : '▸'}</span>
+        </div>
+        ${open ? `<div style="padding:0 13px 12px">
+          ${tel ? `<a href="tel:${nbEsc(tel)}" style="display:inline-block;margin-bottom:8px;padding:6px 12px;border-radius:8px;background:#2563eb;color:#fff;text-decoration:none;font-size:13px">📞 ${nbEsc(tel)}</a>` : ''}
+          <div style="font-size:13.5px;line-height:1.75;white-space:pre-wrap;word-break:break-word">${nbEsc(n.body||'')}</div>
+          ${n.at ? `<div style="font-size:11px;color:var(--text2);margin-top:8px">${nbEsc(n.at)} 기준</div>` : ''}
+        </div>` : ''}
+      </div>`;
+    }).join('');
+    return `<div class="section-title">${nbEsc(c)}</div>` + rows;
+  }).join('');
 }
 
 function renderDeposits() {
