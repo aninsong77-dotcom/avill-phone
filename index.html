@@ -74,6 +74,7 @@ header h1{font-size:16px;font-weight:600}
 .sc-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
 .sc-card.past{background:var(--red-bg);border-color:var(--red-bd)}
 .sc-card.fresh{opacity:.62}
+.req-card.done, .sc-card.done{background:var(--bg);border-color:var(--border);opacity:.6}   /* 끝난 일 — 눈에 덜 걸리게 */
 .sc-top{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
 .sc-date{font-weight:700;font-size:13px}
 .sc-title{font-size:13px;line-height:1.5}
@@ -1117,7 +1118,7 @@ function renderRequests() {
   const statusColors = {접수:'ba',진행중:'ba',완료:'bg'};
   const catColors = {수리:'br',민원:'ba',시설:'bb',기타:'bk'};
   document.getElementById('reqsBody').innerHTML = reqs.length
-    ? reqs.map(r => `<div class="req-card" onclick="openReqEdit('${r.id}')" style="cursor:pointer">
+    ? reqs.map(r => `<div class="req-card ${r.status === '완료' ? 'done' : ''}" onclick="openReqEdit('${r.id}')" style="cursor:pointer">
         <div class="req-top">
           <span class="req-room">${r.room}</span>
           <span class="badge ${catColors[r.cat]||'ba'}">${r.cat||''}</span>
@@ -1159,7 +1160,7 @@ function renderRequests() {
         const done = s.status === '완료';
         const past = !done && (s.date||'') < today;
         const late = past ? _daysTo(s.date, today) : 0;
-        return `<div class="sc-card ${past ? 'past' : ''} ${done && _schedFilter === '예정' ? 'fresh' : ''}" onclick="openSchedEdit('${s.id}')" style="cursor:pointer">
+        return `<div class="sc-card ${past ? 'past' : ''} ${done ? 'done' : ''} ${done && _schedFilter === '예정' ? 'fresh' : ''}" onclick="openSchedEdit('${s.id}')" style="cursor:pointer">
           <div class="sc-top">
             <span class="sc-date">${s.date||''}</span>
             <span class="badge ${s.room ? 'bb' : 'bp'}">${s.room || '건물 전체'}</span>
