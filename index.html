@@ -285,6 +285,38 @@ header h1{font-size:16px;font-weight:600}
 </div>
 
 <!-- 호실 상세 모달 -->
+<!-- 계약금 받음 (폰 → 노트북) -->
+<div class="modal-overlay" id="contractFormModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-size:15px;font-weight:700">🔖 계약금 받음</span>
+      <button onclick="document.getElementById('contractFormModal').classList.remove('open')" style="background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:0 4px">✕</button>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">호실</label>
+      <select id="ctRoom" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface)"></select>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">세입자 이름</label>
+      <input id="ctName" type="text" placeholder="아직 모르면 '미정'" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface)">
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">받은 계약금</label>
+      <input id="ctAmount" type="number" inputmode="numeric" placeholder="예: 100000" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface)">
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">받은 날짜</label>
+      <input id="ctDate" type="date" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface)">
+    </div>
+    <div style="font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:14px">
+      이 방은 부동산에 보이는 공실 목록에서 자동으로 빠집니다.<br>
+      계약이 깨지면 노트북 앱에서 「계약 취소」로 지우면 다시 나타납니다.
+    </div>
+    <button onclick="savePhoneContract()" style="width:100%;padding:12px;border:none;border-radius:8px;background:#c2410c;color:#fff;font-size:15px;font-weight:600;font-family:inherit">등록</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="roomModal" onclick="closeRoomModal(event)">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -712,6 +744,15 @@ function openRoom(room) {
     ${dotsHtml}
     ${cyclesHtml}
     ${paysHtml}
+    ${d.status === 'vacant' ? `
+      <div style="background:#fff7ed;border:1px solid #fdba74;border-radius:10px;padding:12px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:#c2410c;margin-bottom:6px">🔖 계약금을 받으셨나요?</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:10px">
+          여기 적어두면 노트북 앱에 「계약중」 세대로 바로 생깁니다.<br>
+          월세·보증금 같은 조건은 나중에 채우면 됩니다.
+        </div>
+        <button onclick="openContractForm('${room}')" style="width:100%;padding:11px;border:none;border-radius:8px;background:#c2410c;color:#fff;font-size:14px;font-weight:600;font-family:inherit">계약금 받음 적기</button>
+      </div>` : ''}
     <div class="section-title">요청사항</div>
     ${reqHtml}
   `;
@@ -855,6 +896,47 @@ async function savePhoneSchedule() {
     }
     document.getElementById('schedFormModal').classList.remove('open');
     alert('일정이 등록되었습니다.\n노트북 앱에서 자동으로 반영됩니다.');
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+
+// ===== 계약금 받음 (폰 → 노트북) =====
+// 요청·일정과 같은 통로(phone_requests)로 보내되 kind:'contract' 를 붙인다.
+// 새 통로를 파면 Firebase 보안규칙을 다시 게시해야 해서 이미 열린 길을 쓴다.
+function openContractForm(room){
+  document.getElementById('roomModal').classList.remove('open');
+  const sel = document.getElementById('ctRoom');
+  // 공실만 고를 수 있게 한다. 이미 사람이 있는 방에 또 만들면 겹친다.
+  const vacants = (_data?.rooms||[]).filter(r => r.status === 'vacant').sort((a,b)=>a.room.localeCompare(b.room));
+  sel.innerHTML = vacants.map(r => `<option value="${r.room}">${r.room}</option>`).join('')
+    || '<option value="">공실이 없습니다</option>';
+  if(room) sel.value = room;
+  document.getElementById('ctName').value = '';
+  document.getElementById('ctAmount').value = '';
+  document.getElementById('ctDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('contractFormModal').classList.add('open');
+}
+
+async function savePhoneContract(){
+  const room   = document.getElementById('ctRoom').value;
+  const name   = document.getElementById('ctName').value.trim();
+  const amount = Number(document.getElementById('ctAmount').value) || 0;
+  const date   = document.getElementById('ctDate').value;
+  if(!room)   { alert('호실을 골라주세요'); return; }
+  if(!name)   { alert('세입자 이름을 적어주세요.\n아직 모르면 「미정」이라고 적으셔도 됩니다.'); return; }
+  if(amount <= 0) { alert('받은 계약금을 적어주세요'); return; }
+  if(!date)   { alert('받은 날짜를 골라주세요'); return; }
+  // 보내기 직전에 한 번 더 본다 — 그 사이 노트북에서 세입자를 넣었을 수 있다
+  const cur = (_data?.rooms||[]).find(r => r.room === room);
+  if(cur && cur.status !== 'vacant'){ alert(`${room}호에는 이미 세입자가 있습니다.\n노트북 앱에서 확인해주세요.`); return; }
+
+  const id = 'ph_' + Date.now() + Math.random().toString(36).slice(2,6);
+  try {
+    await db.collection('phone_requests').doc(id).set({
+      id, kind:'contract', room, name, amount, date, synced:false,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('contractFormModal').classList.remove('open');
+    alert(`✅ ${room}호 계약금 ${amount.toLocaleString()}원\n\n노트북 앱에서 「계약중」 세대로 생깁니다.\n조건(월세·보증금)은 나중에 채우세요.`);
   } catch(e) { alert('저장 실패: ' + e.message); }
 }
 
