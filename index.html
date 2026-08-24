@@ -253,10 +253,10 @@ header h1{font-size:16px;font-weight:600}
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <span style="font-size:15px;font-weight:700">일정 등록</span>
+      <span id="scFormTitle" style="font-size:15px;font-weight:700">일정 등록</span>
       <button onclick="document.getElementById('schedFormModal').classList.remove('open')" style="background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:0 4px">✕</button>
     </div>
-    <div class="sub-tab-bar" style="margin-bottom:14px">
+    <div class="sub-tab-bar" id="scKindRow" style="margin-bottom:14px">
       <button class="sub-tab" type="button" onclick="switchAddKind('req')">🔧 요청</button>
       <button class="sub-tab on" type="button">📅 일정</button>
     </div>
@@ -281,9 +281,20 @@ header h1{font-size:16px;font-weight:600}
       <textarea id="scMemo" placeholder="업체 연락처, 준비물 등"
         style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-height:70px;resize:none;box-sizing:border-box;font-family:inherit"></textarea>
     </div>
-    <button onclick="savePhoneSchedule()" style="width:100%;padding:14px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">등록하기</button>
+    <div id="scStatusRow" style="margin-bottom:12px;display:none">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">상태</label>
+      <select id="scStatus" onchange="onSchedStatusChange()" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface)">
+        <option value="예정">예정</option>
+        <option value="완료">완료</option>
+      </select>
+    </div>
+    <div id="scDoneRow" style="margin-bottom:20px;display:none">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">어떻게 처리했나요? *</label>
+      <textarea id="scDoneNote" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-height:70px;resize:none;box-sizing:border-box;font-family:inherit" placeholder="나중에 이 기록으로 찾게 됩니다"></textarea>
+    </div>
+    <button id="scFormBtn" onclick="savePhoneSchedule()" style="width:100%;padding:14px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">등록하기</button>
     <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:10px;line-height:1.5">
-      노트북 앱을 열면 일정 목록에 자동으로 들어갑니다.<br>완료 처리와 수정은 노트북 앱에서 합니다.
+      노트북 앱을 열면 자동으로 반영됩니다.
     </div>
   </div>
 </div>
@@ -892,8 +903,24 @@ async function savePhoneRequest() {
 // ===== 일정 등록 (폰 → 노트북) =====
 // 요청과 똑같은 통로(phone_requests)로 보내되 kind:'sched' 를 붙인다.
 // 새 통로를 파면 Firebase 보안규칙을 다시 게시해야 해서, 이미 열린 길을 쓴다.
+// 상태를 「완료」로 고르면 처리내용 칸이 나타난다 (노트북과 같은 규칙)
+function onSchedStatusChange() {
+  const done = document.getElementById('scStatus').value === '완료';
+  document.getElementById('scDoneRow').style.display = done ? 'block' : 'none';
+}
+
+let _editSchedId = null;
+
 function openSchedForm() {
+  _editSchedId = null;
   document.getElementById('reqFormModal').classList.remove('open');
+  document.getElementById('scFormTitle').textContent = '일정 등록';
+  document.getElementById('scFormBtn').textContent = '등록하기';
+  document.getElementById('scKindRow').style.display = '';       // 새로 만들 때만 종류를 고른다
+  // 수정용 칸은 끄고 값도 비운다 — 안 비우면 직전에 적은 글이 새 일정에 딸려 들어간다
+  document.getElementById('scStatusRow').style.display = 'none';
+  document.getElementById('scDoneRow').style.display = 'none';
+  document.getElementById('scDoneNote').value = '';
   const sel = document.getElementById('scRoom');
   const occupied = (_data?.rooms||[]).filter(r => r.status !== 'vacant').sort((a,b)=>a.room.localeCompare(b.room));
   sel.innerHTML = '<option value="">건물 전체 (호실 없음)</option>' +
@@ -905,6 +932,29 @@ function openSchedForm() {
   document.getElementById('schedFormModal').classList.add('open');
 }
 
+function openSchedEdit(id) {
+  const sc = (_data?.schedules||[]).find(x => x.id === id);
+  if (!sc) return;
+  _editSchedId = id;
+  document.getElementById('reqFormModal').classList.remove('open');
+  document.getElementById('scFormTitle').textContent = '일정 수정';
+  document.getElementById('scFormBtn').textContent = '저장하기';
+  document.getElementById('scKindRow').style.display = 'none';    // 고치는 중엔 종류를 바꿀 수 없다
+  document.getElementById('scStatusRow').style.display = 'block';
+  const sel = document.getElementById('scRoom');
+  const occupied = (_data?.rooms||[]).filter(r => r.status !== 'vacant').sort((a,b)=>a.room.localeCompare(b.room));
+  sel.innerHTML = '<option value="">건물 전체 (호실 없음)</option>' +
+    occupied.map(r => `<option value="${r.room}">${r.room} (${r.tenantName})</option>`).join('');
+  sel.value = sc.room || '';
+  document.getElementById('scDate').value  = sc.date || '';
+  document.getElementById('scTitle').value = sc.title || '';
+  document.getElementById('scMemo').value  = sc.memo || '';
+  document.getElementById('scStatus').value = sc.status || '예정';
+  document.getElementById('scDoneNote').value = sc.doneNote || '';
+  onSchedStatusChange();
+  document.getElementById('schedFormModal').classList.add('open');
+}
+
 async function savePhoneSchedule() {
   const title = document.getElementById('scTitle').value.trim();
   const date  = document.getElementById('scDate').value;
@@ -912,6 +962,43 @@ async function savePhoneSchedule() {
   const memo  = document.getElementById('scMemo').value.trim();
   if (!title) { alert('일정 제목을 입력해주세요'); return; }
   if (!date)  { alert('일정 날짜를 골라주세요'); return; }
+
+  // ── 수정 ──
+  if (_editSchedId) {
+    const status = document.getElementById('scStatus').value;
+    const feedback = document.getElementById('scDoneNote').value.trim();
+    if (status === '완료' && !feedback) {
+      alert('어떻게 처리했는지 적어주세요.\n나중에 이 기록으로 찾게 됩니다.');
+      document.getElementById('scDoneNote').focus();
+      return;
+    }
+    // kind:'sched' 를 반드시 실어야 한다 — 없으면 노트북이 요청으로 처리해
+    // 엉뚱한 요청이 새로 생긴다. 노트북에서 만든 일정은 여기 문서가 아예 없어 더욱 필수.
+    const update = { id: _editSchedId, kind: 'sched', op: 'edit', synced: false,
+                     room, date, title, memo, status, feedback,
+                     updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    try {
+      await db.collection('phone_requests').doc(_editSchedId).set(update, { merge: true });
+      if (_data && Array.isArray(_data.schedules)) {
+        const i = _data.schedules.findIndex(x => x.id === _editSchedId);
+        if (i !== -1) {
+          Object.assign(_data.schedules[i], { room, date, title, memo, status });
+          if (status === '완료') {
+            _data.schedules[i].doneNote = feedback;
+            _data.schedules[i].doneAt = _data.schedules[i].doneAt || date;
+          }
+          _data.schedules[i]._pending = true;
+        }
+        renderRequests();
+      }
+      document.getElementById('schedFormModal').classList.remove('open');
+      _editSchedId = null;
+      alert('일정을 고쳤습니다.\n노트북 앱을 열면 반영됩니다.');
+    } catch(e) { alert('저장 실패: ' + e.message); }
+    return;
+  }
+
+  // ── 새로 등록 ──
   const id = 'ph_' + Date.now() + Math.random().toString(36).slice(2,6);
   try {
     await db.collection('phone_requests').doc(id).set({
@@ -1072,7 +1159,7 @@ function renderRequests() {
         const done = s.status === '완료';
         const past = !done && (s.date||'') < today;
         const late = past ? _daysTo(s.date, today) : 0;
-        return `<div class="sc-card ${past ? 'past' : ''} ${done && _schedFilter === '예정' ? 'fresh' : ''}">
+        return `<div class="sc-card ${past ? 'past' : ''} ${done && _schedFilter === '예정' ? 'fresh' : ''}" onclick="openSchedEdit('${s.id}')" style="cursor:pointer">
           <div class="sc-top">
             <span class="sc-date">${s.date||''}</span>
             <span class="badge ${s.room ? 'bb' : 'bp'}">${s.room || '건물 전체'}</span>
