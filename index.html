@@ -75,6 +75,14 @@ header h1{font-size:16px;font-weight:600}
 .sc-card.past{background:var(--red-bg);border-color:var(--red-bd)}
 .sc-card.fresh{opacity:.62}
 .req-card.done, .sc-card.done{background:var(--bg);border-color:var(--border);opacity:.6}   /* 끝난 일 — 눈에 덜 걸리게 */
+.td-card{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:10px;padding:11px 12px;margin-bottom:9px}
+.td-card.red{border-left-color:#ef4444;background:var(--red-bg)}
+.td-card.amber{border-left-color:#f59e0b;background:var(--amber-bg)}
+.td-top{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
+.td-title{font-size:14px;font-weight:600;line-height:1.4}
+.td-sub{font-size:11.5px;color:var(--text2);line-height:1.55;margin-top:3px}
+.td-group{font-size:12px;font-weight:700;color:var(--text2);margin:14px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.td-group:first-child{margin-top:0}
 .sc-top{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
 .sc-date{font-weight:700;font-size:13px}
 .sc-title{font-size:13px;line-height:1.5}
@@ -124,7 +132,8 @@ header h1{font-size:16px;font-weight:600}
 
 <div class="tab-bar">
   <button class="tab-btn on" onclick="switchTab('rooms',this)">호실 현황</button>
-  <button class="tab-btn" onclick="switchTab('requests',this)">요청/일정</button>
+  <button class="tab-btn" onclick="switchTab('today',this)">오늘 할일<span id="todayBadge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:3px;vertical-align:1px"></span></button>
+  <button class="tab-btn" onclick="switchTab('requests',this)">전체 할일</button>
   <button class="tab-btn" onclick="switchTab('notice',this)">공지</button>
   <button class="tab-btn" onclick="switchTab('notebook',this)">연락처</button>
   <button class="tab-btn" onclick="switchTab('ops',this)">운영팁</button>
@@ -133,6 +142,10 @@ header h1{font-size:16px;font-weight:600}
 
 <div class="page on" id="tab-rooms">
   <div id="roomsBody"><div class="loading">데이터 불러오는 중...</div></div>
+</div>
+
+<div class="page" id="tab-today">
+  <div id="todayBody"><div class="loading">데이터 불러오는 중...</div></div>
 </div>
 
 <div class="page" id="tab-requests">
@@ -493,6 +506,7 @@ db.collection('building').doc('phone_data').onSnapshot(doc => {
   const timeStr = t ? `${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')} 업데이트` : '동기화됨';
   document.getElementById('syncStatus').textContent = timeStr;
   renderRooms();
+  renderTodayTodo();
   renderRequests();
   renderNotice();
 }, err => {
@@ -514,6 +528,126 @@ function switchTab(tab, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
   el.classList.add('on');
   document.getElementById('tab-'+tab).classList.add('on');
+}
+
+// ===== 오늘 할일 =====
+// 판정 규칙은 노트북의 buildTodoList 와 같게 맞춘다. 계약 만료 시기와 연체 등급은
+// 노트북이 계산해 보내준 값(notice·arrearLevel)을 그대로 쓴다 — 규칙을 여기에 복제하면
+// 나중에 한쪽만 고쳐져 두 화면이 다른 답을 낸다.
+const TD_STALE_DAYS = 7;    // 요청이 며칠 방치되면 빨갛게 (노트북과 같은 값)
+
+function buildTodayList() {
+  if (!_data) return [];
+  const td = new Date().toISOString().slice(0,10);
+  const list = [];
+
+  // ① 밀린 월세
+  (_data.rooms || []).forEach(r => {
+    if (r.status === 'vacant' || r.status === 'free' || r.status === 'contract') return;
+    const lv = r.arrearLevel;
+    if (lv !== 'overdue' && lv !== 'danger') return;
+    list.push({
+      icon: lv === 'danger' ? '🔴' : '🟠', kind: '월세',
+      title: `${r.room} ${r.tenantName || ''} · ${fmt(r.shortage || 0)} 밀림`,
+      sub: `밀린 ${r.unpaidCount || 0}달`,
+      level: lv === 'danger' ? 'red' : 'amber'
+    });
+  });
+
+  // ② 계약 만료 통지
+  (_data.rooms || []).forEach(r => {
+    const n = r.notice;
+    if (!n || n.state === 'before' || n.state === 'none' || !n.state) return;
+    const who = `${r.room} ${r.tenantName || ''}`.trim();
+    if (n.state === 'window') {
+      const left = n.to ? _daysTo(td, n.to) : 0;
+      list.push({ icon: '📄', kind: '계약',
+        title: `${who} · 갱신 여부 알릴 기간`,
+        sub: `${left <= 0 ? '오늘까지' : left + '일 남음'} · 계약 종료 ${r.leaseEnd || ''}`,
+        level: left <= 7 ? 'red' : 'amber' });
+    } else if (n.state === 'missed') {
+      list.push({ icon: '📄', kind: '계약',
+        title: `${who} · 통지 기한이 지났습니다`,
+        sub: `이대로 두면 묵시적 갱신이 됩니다 · 계약 종료 ${r.leaseEnd || ''}`,
+        level: 'red' });
+    } else if (n.state === 'rolling') {
+      list.push({ icon: '📄', kind: '계약',
+        title: `${who} · 묵시적 갱신 중`,
+        sub: `계약 종료일 ${r.leaseEnd || ''} 이 지났는데 계속 거주 중입니다`,
+        level: 'amber' });
+    }
+  });
+
+  // ③ 처리 안 된 요청
+  (_data.requests || []).forEach(q => {
+    if (q.status === '완료') return;
+    const waited = q.date ? _daysTo(q.date, td) : 0;
+    list.push({
+      icon: '🔧', kind: '요청', id: q.id, go: 'req',
+      title: `${q.room} ${(q.content || '').slice(0, 30)}`,
+      sub: `${q.status || '접수'}${q.date ? ` · 접수 ${q.date} (${waited}일 경과)` : ''}`,
+      level: waited >= TD_STALE_DAYS ? 'red' : 'amber'
+    });
+  });
+
+  // ④ 오늘까지인 일정
+  (_data.schedules || []).forEach(sc => {
+    if (sc.status === '완료' || !sc.date || sc.date > td) return;
+    const late = _daysTo(sc.date, td);
+    list.push({
+      icon: '🗓️', kind: '일정', id: sc.id, go: 'sched',
+      title: `${sc.room || ''} ${sc.title || ''}`.trim(),
+      sub: `예정 ${sc.date}${late > 0 ? ` (${late}일 지남)` : ' (오늘)'}`,
+      level: late > 0 ? 'red' : 'amber'
+    });
+  });
+
+  const rank = { red: 0, amber: 1, gray: 2 };
+  return list.sort((a, b) => (rank[a.level] ?? 3) - (rank[b.level] ?? 3));
+}
+
+function renderTodayTodo() {
+  const box = document.getElementById('todayBody');
+  if (!box) return;
+  if (!_data) { box.innerHTML = '<div class="loading">데이터 불러오는 중...</div>'; return; }
+  const list = buildTodayList();
+
+  // 탭 배지 — 급한 것(빨강) 개수
+  const badge = document.getElementById('todayBadge');
+  const redCnt = list.filter(x => x.level === 'red').length;
+  if (badge) {
+    badge.textContent = redCnt || '';
+    badge.style.display = redCnt ? '' : 'none';
+  }
+
+  if (!list.length) {
+    box.innerHTML = '<div class="empty">오늘 할 일이 없습니다 ✓</div>';
+    return;
+  }
+
+  const order = ['월세', '계약', '요청', '일정'];
+  let html = `<div style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.6">
+    ${new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' })} ·
+    <b style="color:var(--text)">${list.length}건</b>${redCnt ? ` <span style="color:#ef4444">(급한 것 ${redCnt})</span>` : ''}
+  </div>`;
+
+  order.forEach(kind => {
+    const rows = list.filter(x => x.kind === kind);
+    if (!rows.length) return;
+    html += `<div class="td-group">${kind} ${rows.length}건</div>`;
+    rows.forEach(x => {
+      const click = x.go === 'req'   ? ` onclick="openReqEdit('${x.id}')" style="cursor:pointer"`
+                  : x.go === 'sched' ? ` onclick="openSchedEdit('${x.id}')" style="cursor:pointer"` : '';
+      html += `<div class="td-card ${x.level}"${click}>
+        <div class="td-top">
+          <span>${x.icon}</span>
+          <span class="td-title">${x.title}</span>
+        </div>
+        <div class="td-sub">${x.sub}</div>
+      </div>`;
+    });
+  });
+  box.innerHTML = html;
 }
 
 function renderRooms() {
