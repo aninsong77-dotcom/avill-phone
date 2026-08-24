@@ -232,13 +232,17 @@ header h1{font-size:16px;font-weight:600}
       <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">날짜</label>
       <input type="date" id="reqDate" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface);box-sizing:border-box">
     </div>
-    <div id="reqStatusRow" style="margin-bottom:20px;display:none">
+    <div id="reqStatusRow" style="margin-bottom:12px;display:none">
       <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">상태</label>
-      <select id="reqStatus" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface)">
+      <select id="reqStatus" onchange="onReqStatusChange()" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface)">
         <option value="접수">접수</option>
         <option value="진행중">진행중</option>
         <option value="완료">완료</option>
       </select>
+    </div>
+    <div id="reqFeedbackRow" style="margin-bottom:20px;display:none">
+      <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">어떻게 처리했나요? *</label>
+      <textarea id="reqFeedback" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-height:70px;resize:none;box-sizing:border-box" placeholder="나중에 이 기록으로 찾게 됩니다"></textarea>
     </div>
     <button id="reqFormBtn" onclick="savePhoneRequest()" style="width:100%;padding:14px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">등록하기</button>
   </div>
@@ -773,11 +777,21 @@ async function toggleCleaning(room, checked) {
   } catch(e) { alert('저장 실패: ' + e.message); }
 }
 
+// 상태를 「완료」로 고르면 처리내용 칸이 나타난다 (노트북과 같은 규칙)
+function onReqStatusChange() {
+  const done = document.getElementById('reqStatus').value === '완료';
+  document.getElementById('reqFeedbackRow').style.display = done ? 'block' : 'none';
+}
+
 function openReqForm(room) {
   _editReqId = null;
   document.getElementById('reqFormTitle').textContent = '요청사항 등록';
   document.getElementById('reqFormBtn').textContent = '등록하기';
   document.getElementById('reqStatusRow').style.display = 'none';
+  // 처리내용 칸도 함께 끄고 값을 비운다 — 등록·수정이 같은 모달이라,
+  // 안 비우면 직전 수정에서 적은 글이 새 요청에 딸려 들어간다.
+  document.getElementById('reqFeedbackRow').style.display = 'none';
+  document.getElementById('reqFeedback').value = '';
   document.getElementById('reqKindRow').style.display = '';      // 새로 만들 때만 종류를 고른다
   const sel = document.getElementById('reqRoom');
   const occupied = (_data?.rooms||[]).filter(r=>r.status!=='vacant').sort((a,b)=>a.room.localeCompare(b.room));
@@ -806,6 +820,8 @@ function openReqEdit(id) {
   document.getElementById('reqDate').value = r.date || '';
   document.getElementById('reqContent').value = r.content || '';
   document.getElementById('reqStatus').value = r.status || '접수';
+  document.getElementById('reqFeedback').value = r.feedback || '';
+  onReqStatusChange();
   selectReqCatByVal(r.cat || '기타');
   document.getElementById('reqFormModal').classList.add('open');
 }
@@ -834,12 +850,24 @@ async function savePhoneRequest() {
   if (_editReqId) {
     // 수정 모드
     const status = document.getElementById('reqStatus').value;
-    const update = { cat, content, date, status, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    const feedback = document.getElementById('reqFeedback').value.trim();
+    if (status === '완료' && !feedback) {
+      alert('어떻게 처리했는지 적어주세요.\n나중에 이 기록으로 찾게 됩니다.');
+      document.getElementById('reqFeedback').focus();
+      return;
+    }
+    // 노트북은 synced==false 인 문서만 읽는다. 예전엔 이 표시를 안 붙여서
+    // 폰에서 고쳐도 노트북이 영영 못 봤다.
+    // kind 를 반드시 실어야 한다 — 없으면 노트북이 갈래를 못 정한다.
+    // 전체 필드를 실어야, 노트북에 그 요청이 없을 때 새로 만들 수 있다(upsert).
+    const update = { id: _editReqId, kind: 'req', op: 'edit', synced: false,
+                     room, cat, content, date, status, feedback,
+                     updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
     try {
       await db.collection('phone_requests').doc(_editReqId).set(update, { merge: true });
       if (_data) {
         const idx = _data.requests.findIndex(x=>x.id===_editReqId);
-        if (idx !== -1) Object.assign(_data.requests[idx], { cat, content, date, status });
+        if (idx !== -1) Object.assign(_data.requests[idx], { cat, content, date, status, feedback });
         renderRequests();
       }
       document.getElementById('reqFormModal').classList.remove('open');
