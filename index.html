@@ -511,7 +511,7 @@ function renderRooms() {
     html += `<div class="floor-label"><span>${f.label}</span><span>${paid}/${occupied} 납부</span></div><div class="room-grid">`;
     f.rooms.forEach(r => {
       const d = roomMap[r] || { room: r, status: 'vacant', tenantName: '', rent: 0, cleaning: false };
-      const stTxt = {paid:'✓ 납부완료', unpaid:'⏳ 미납', overdue:'🔴 연체', vacant:'공실', free:'💜 무임거주', contract:'🔖 계약중'}[d.status] || '';
+      const stTxt = ({paid:'✓ 납부완료', unpaid:'⏳ 미납', overdue:'🔴 연체', vacant:'공실', free:'💜 무임거주', contract:'🔖 계약중'}[d.status] || '') + (d._pending ? ' ⋯' : '');
       const shortageHtml = d.shortage > 0 ? `<div class="shortage-txt">미납 ${fmtS(d.shortage)}</div>` : '';
       html += `<div class="room-card ${d.status}" onclick="openRoom('${r}')">
         <div class="room-no">${r}</div>
@@ -729,7 +729,8 @@ function openRoom(room) {
   document.getElementById('roomModalContent').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
       <div><div class="modal-title" style="margin-bottom:4px">${room}</div><div style="font-size:15px;font-weight:600">${d.tenantName||'공실'}</div></div>
-      <div>${stBadge}${d.shortage > 0 ? `<div style="font-size:12px;color:var(--red);margin-top:4px">미납 ${fmt(d.shortage)}</div>` : ''}</div>
+      <div>${stBadge}${d.shortage > 0 ? `<div style="font-size:12px;color:var(--red);margin-top:4px">미납 ${fmt(d.shortage)}</div>` : ''}
+        ${d._pending ? `<div style="font-size:10px;color:var(--text3);margin-top:4px">노트북 앱을 열면 반영됩니다</div>` : ''}</div>
     </div>
     <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:14px">
       <div class="info-row"><span class="info-lbl">전화번호</span><span>${d.phone||'-'}</span></div>
@@ -935,8 +936,20 @@ async function savePhoneContract(){
       id, kind:'contract', room, name, amount, date, synced:false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    // 노트북이 처리하기 전에도 화면에는 바로 보이게 한다(요청·일정과 같은 방식).
+    // 노트북이 받아 올리면 진짜 값으로 덮인다.
+    if (_data && Array.isArray(_data.rooms)) {
+      const rr = _data.rooms.find(x => x.room === room);
+      if (rr) {
+        rr.status     = 'contract';
+        rr.tenantName = name;
+        rr.depPaid    = (Number(rr.depPaid) || 0) + amount;
+        rr._pending   = true;          // 아직 노트북을 안 거쳤다는 표시
+      }
+      renderRooms();
+    }
     document.getElementById('contractFormModal').classList.remove('open');
-    alert(`✅ ${room}호 계약금 ${amount.toLocaleString()}원\n\n노트북 앱에서 「계약중」 세대로 생깁니다.\n조건(월세·보증금)은 나중에 채우세요.`);
+    alert(`✅ ${room}호 계약금 ${amount.toLocaleString()}원\n\n노트북 앱을 열면 「계약중」 세대로 만들어집니다.\n조건(월세·보증금)은 그때 채우세요.`);
   } catch(e) { alert('저장 실패: ' + e.message); }
 }
 
