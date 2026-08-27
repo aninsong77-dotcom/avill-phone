@@ -41,6 +41,8 @@ header h1{font-size:16px;font-weight:600}
 .room-card.vacant{background:#f5f4f0;opacity:.7}
 .room-card.contract{background:#fff7ed;border-color:#fdba74}
 .room-card.contract .room-status{color:#c2410c;font-weight:700}
+.room-card.upcoming{background:#fefce8;border-color:#fde047}
+.room-card.upcoming .room-status{color:#a16207;font-weight:700}
 .room-card.free{background:#f3f0ff;border-color:#c4b5fd}
 .room-card.free .room-status{color:#7c3aed}
 .room-no{font-size:15px;font-weight:700;margin-bottom:2px}
@@ -656,12 +658,17 @@ function renderRooms() {
   _data.rooms.forEach(r => roomMap[r.room] = r);
   let html = '';
   FLOORS.forEach(f => {
-    const occupied = f.rooms.filter(r => roomMap[r] && roomMap[r].status !== 'vacant' && roomMap[r].status !== 'contract').length;
+    const occupied = f.rooms.filter(r => roomMap[r] && roomMap[r].status !== 'vacant' && roomMap[r].status !== 'contract' && roomMap[r].status !== 'upcoming').length;
     const paid = f.rooms.filter(r => roomMap[r] && roomMap[r].status === 'paid').length;
     html += `<div class="floor-label"><span>${f.label}</span><span>${paid}/${occupied} 납부</span></div><div class="room-grid">`;
     f.rooms.forEach(r => {
       const d = roomMap[r] || { room: r, status: 'vacant', tenantName: '', rent: 0, cleaning: false };
-      const stTxt = ({paid:'✓ 납부완료', unpaid:'⏳ 미납', overdue:'🔴 연체', vacant:'공실', free:'💜 무임거주', contract:'🔖 계약중'}[d.status] || '') + (d._pending ? ' ⋯' : '');
+      const upcomingDays = (d.status === 'upcoming' && d.moveIn)
+        ? Math.round((new Date(d.moveIn) - new Date(new Date().toISOString().slice(0,10))) / 86400000) : null;
+      const stTxt = (d.status === 'upcoming'
+        ? `🔑 D-${upcomingDays} 입주예정`
+        : ({paid:'✓ 납부완료', unpaid:'⏳ 미납', overdue:'🔴 연체', vacant:'공실', free:'💜 무임거주', contract:'🔖 계약중'}[d.status] || '')
+      ) + (d._pending ? ' ⋯' : '');
       const shortageHtml = d.shortage > 0 ? `<div class="shortage-txt">미납 ${fmtS(d.shortage)}</div>` : '';
       html += `<div class="room-card ${d.status}" onclick="openRoom('${r}')">
         <div class="room-no">${r}</div>
