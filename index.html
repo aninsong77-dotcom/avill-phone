@@ -802,10 +802,13 @@ function openRoom(room) {
     const dd = p.d ? `${+p.d.slice(5,7)}.${+p.d.slice(8,10)}` : '-';
     const yy = p.d ? p.d.slice(2,4) : '';
     let used;
-    if (p.pre) used = `<span style="color:#7c3aed">입주 전 (월세 제외)</span>`;
+    // 복비 대납 = 세입자가 부동산에 대신 내고 그만큼 덜 보낸 돈. 통장엔 안 찍혔지만
+    // 월세는 받은 것으로 치므로 목록에는 남기되, 통장 내역과 헷갈리지 않게 표시한다.
+    if (p.fee) used = `<span style="color:var(--text3)">복비 대납 (통장에 안 찍힘)</span>`;
+    else if (p.pre) used = `<span style="color:#7c3aed">월세 계산에서 빠짐 (계약 전)</span>`;
     else if (!p.u || !p.u.length) used = `<span style="color:var(--blue)">아직 배정 안 됨</span>`;
     else used = p.u.map(u => `<span style="color:${u.late?'#c98a00':'var(--text2)'};white-space:nowrap">${+u.ym.slice(5,7)}월분${p.u.length>1?' '+fmtS(u.amount):''}</span>`).join(' · ');
-    return `<tr style="border-top:1px solid var(--border);${p.pre?'opacity:.6':''}">
+    return `<tr style="border-top:1px solid var(--border);${(p.pre||p.fee)?'opacity:.6':''}">
       <td style="padding:5px 8px;font-size:11px;white-space:nowrap">${yy}.${dd}</td>
       <td style="padding:5px 8px;font-size:11px;color:var(--text2)">${p.n || '-'}</td>
       <td style="padding:5px 8px;text-align:right;font-size:11px;color:var(--green);font-weight:600;white-space:nowrap">${fmtS(p.a)}</td>
