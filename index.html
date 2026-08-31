@@ -124,6 +124,11 @@ header h1{font-size:16px;font-weight:600}
 .nb-cb{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#f3f4f6;color:#374151}
 .nb-cb-수리{background:#fee2e2;color:#b91c1c}.nb-cb-전기{background:#fef3c7;color:#92400e}.nb-cb-인테리어{background:#dbeafe;color:#1e40af}.nb-cb-부동산{background:#d1fae5;color:#065f46}.nb-cb-청소{background:#ede9fe;color:#6d28d9}.nb-cb-기타{background:#f3f4f6;color:#374151}
 .nb-add-btn{width:100%;padding:14px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:14px}
+
+/* 메모칸: 기본 5줄 + 적은 내용만큼 스스로 늘어남 (autoGrow) */
+textarea.ta-memo{min-height:110px;line-height:1.6;resize:vertical;overflow-y:hidden}
+/* 완료 후에 나타나는 칸 — 처음엔 작게 열리고 적는 만큼 늘어난다 */
+textarea.ta-memo.ta-slim{min-height:46px}
 </style>
 </head>
 <body>
@@ -242,7 +247,7 @@ header h1{font-size:16px;font-weight:600}
     </div>
     <div style="margin-bottom:12px">
       <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">내용 *</label>
-      <textarea id="reqContent" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-height:90px;resize:none;box-sizing:border-box" placeholder="요청 내용을 입력하세요"></textarea>
+      <textarea id="reqContent" class="ta-memo" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;font-family:inherit" placeholder="요청 내용을 입력하세요"></textarea>
     </div>
     <div style="margin-bottom:12px">
       <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">날짜</label>
@@ -258,7 +263,7 @@ header h1{font-size:16px;font-weight:600}
     </div>
     <div id="reqFeedbackRow" style="margin-bottom:20px;display:none">
       <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">어떻게 처리했나요? *</label>
-      <textarea id="reqFeedback" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-height:70px;resize:none;box-sizing:border-box" placeholder="나중에 이 기록으로 찾게 됩니다"></textarea>
+      <textarea id="reqFeedback" class="ta-memo ta-slim" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;font-family:inherit" placeholder="나중에 이 기록으로 찾게 됩니다"></textarea>
     </div>
     <button id="reqFormBtn" onclick="savePhoneRequest()" style="width:100%;padding:14px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">등록하기</button>
   </div>
@@ -295,7 +300,7 @@ header h1{font-size:16px;font-weight:600}
     <div style="margin-bottom:20px">
       <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">메모</label>
       <textarea id="scMemo" placeholder="업체 연락처, 준비물 등"
-        style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-height:70px;resize:none;box-sizing:border-box;font-family:inherit"></textarea>
+        class="ta-memo" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;font-family:inherit"></textarea>
     </div>
     <div id="scStatusRow" style="margin-bottom:12px;display:none">
       <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">상태</label>
@@ -306,7 +311,7 @@ header h1{font-size:16px;font-weight:600}
     </div>
     <div id="scDoneRow" style="margin-bottom:20px;display:none">
       <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">어떻게 처리했나요? *</label>
-      <textarea id="scDoneNote" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-height:70px;resize:none;box-sizing:border-box;font-family:inherit" placeholder="나중에 이 기록으로 찾게 됩니다"></textarea>
+      <textarea id="scDoneNote" class="ta-memo ta-slim" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box;font-family:inherit" placeholder="나중에 이 기록으로 찾게 됩니다"></textarea>
     </div>
     <button id="scFormBtn" onclick="savePhoneSchedule()" style="width:100%;padding:14px;background:#15224a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">등록하기</button>
     <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:10px;line-height:1.5">
@@ -382,7 +387,7 @@ header h1{font-size:16px;font-weight:600}
     </div>
     <div style="margin-bottom:20px">
       <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">메모 (선택)</label>
-      <textarea id="nb_cNote" placeholder="평일만 가능, 견적비용, 특이사항 등" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;min-height:80px;resize:none;font-family:inherit;line-height:1.5"></textarea>
+      <textarea id="nb_cNote" class="ta-memo" placeholder="평일만 가능, 견적비용, 특이사항 등" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;box-sizing:border-box"></textarea>
     </div>
     <button onclick="nbSaveContact()" style="width:100%;padding:15px;background:#15224a;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer">저장</button>
     <button id="nbCDelBtn" onclick="nbDeleteContact()" style="display:none;width:100%;padding:13px;margin-top:10px;background:none;color:var(--red);border:1.5px solid var(--red-bd);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">이 업체 삭제</button>
@@ -407,6 +412,20 @@ header h1{font-size:16px;font-weight:600}
 </div>
 
 <script>
+// 메모칸(.ta-memo)은 적은 내용만큼 스스로 키가 자란다
+function autoGrowTA(ta){
+  if (!ta) return;
+  ta.style.height = 'auto';
+  ta.style.height = (ta.scrollHeight + 2) + 'px';
+}
+function autoGrowIn(root){
+  setTimeout(() => (root || document).querySelectorAll('textarea.ta-memo').forEach(autoGrowTA), 0);
+}
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t && t.tagName === 'TEXTAREA' && t.classList.contains('ta-memo')) autoGrowTA(t);
+});
+
 firebase.initializeApp({
   apiKey: "AIzaSyAcP5LuRuudHxWFVYSRwZXct8n-LJhKWY0",
   authDomain: "building-1-30739.firebaseapp.com",
@@ -917,7 +936,7 @@ function openRoom(room) {
     <div class="section-title">요청사항</div>
     ${reqHtml}
   `;
-  document.getElementById('roomModal').classList.add('open');
+  document.getElementById('roomModal').classList.add('open'); autoGrowIn();
 }
 
 function closeRoomModal(e) {
@@ -957,7 +976,7 @@ function openReqForm(room) {
   document.getElementById('reqDate').value = new Date().toISOString().slice(0,10);
   document.getElementById('reqContent').value = '';
   selectReqCatByVal('기타');
-  document.getElementById('reqFormModal').classList.add('open');
+  document.getElementById('reqFormModal').classList.add('open'); autoGrowIn();
 }
 
 function openReqEdit(id) {
@@ -979,7 +998,7 @@ function openReqEdit(id) {
   document.getElementById('reqFeedback').value = r.feedback || '';
   onReqStatusChange();
   selectReqCatByVal(r.cat || '기타');
-  document.getElementById('reqFormModal').classList.add('open');
+  document.getElementById('reqFormModal').classList.add('open'); autoGrowIn();
 }
 
 function selectReqCat(btn, cat) {
@@ -1074,7 +1093,7 @@ function openSchedForm() {
   document.getElementById('scDate').value = new Date().toISOString().slice(0,10);
   document.getElementById('scTitle').value = '';
   document.getElementById('scMemo').value = '';
-  document.getElementById('schedFormModal').classList.add('open');
+  document.getElementById('schedFormModal').classList.add('open'); autoGrowIn();
 }
 
 function openSchedEdit(id) {
@@ -1097,7 +1116,7 @@ function openSchedEdit(id) {
   document.getElementById('scStatus').value = sc.status || '예정';
   document.getElementById('scDoneNote').value = sc.doneNote || '';
   onSchedStatusChange();
-  document.getElementById('schedFormModal').classList.add('open');
+  document.getElementById('schedFormModal').classList.add('open'); autoGrowIn();
 }
 
 async function savePhoneSchedule() {
@@ -1174,7 +1193,7 @@ function openContractForm(room){
   document.getElementById('ctName').value = '';
   document.getElementById('ctAmount').value = '';
   document.getElementById('ctDate').value = new Date().toISOString().slice(0,10);
-  document.getElementById('contractFormModal').classList.add('open');
+  document.getElementById('contractFormModal').classList.add('open'); autoGrowIn();
 }
 
 async function savePhoneContract(){
@@ -1553,7 +1572,7 @@ function nbOpenContact(id) {
   document.getElementById('nb_cNote').value   = c?.note   || '';
   nbRenderCatBtns(c?.cat || _nbCategories.at(-1) || '기타');
   document.getElementById('nbCDelBtn').style.display = c ? 'block' : 'none';
-  document.getElementById('nbContactModal').classList.add('open');
+  document.getElementById('nbContactModal').classList.add('open'); autoGrowIn();
 }
 
 function nbSelectCat(btn, cat) {
