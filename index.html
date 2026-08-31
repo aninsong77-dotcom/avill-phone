@@ -1786,10 +1786,19 @@ function renderDeposits() {
       <select id="depRoomSel_${x.fid}" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface);margin-bottom:8px">
         <option value="">호실 선택</option>${opts}
       </select>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+        <label style="font-size:12px;color:var(--text2);font-weight:600">이 돈은</label>
+        <select id="depKind_${x.fid}" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface)">
+          <option value="rent">월세</option>
+          <option value="deposit">보증금·계약금</option>
+        </select>
+      </div>
       <div style="display:flex;gap:8px">
         <button onclick="depApprove('${x.fid}')" style="flex:2;padding:12px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">✅ 입금 확인</button>
         <button onclick="depIgnore('${x.fid}')" style="flex:1;padding:12px;background:none;color:var(--text2);border:1.5px solid var(--border);border-radius:10px;font-size:14px;cursor:pointer">무시</button>
       </div>
+      <button onclick="depSplitOpen('${x.fid}', ${x.p.amount})" style="width:100%;margin-top:8px;padding:11px;background:none;color:var(--blue);border:1.5px dashed var(--blue);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">🔀 여러 호실에 나눠 넣기</button>
+      <div id="depSplitBox_${x.fid}" style="display:none;margin-top:10px;padding:10px;background:var(--bg);border-radius:10px"></div>
     </div>`;
   }).join('') : '<div class="empty">확인 대기 중인 입금이 없습니다</div>';
 
@@ -1811,6 +1820,114 @@ function renderDeposits() {
   }).join('') : '<div class="empty">처리된 내역이 없습니다</div>';
 }
 
+// ── 여러 호실에 나눠 넣기 (2026-08-31) ─────────────────────────────
+// 한 회사가 여러 호실을 계약하면 보증금·월세가 통장에 한 줄로 들어온다.
+// 호실 하나만 고르는 기존 화면으로는 처리할 수 없어서, 줄마다 호실·금액·종류를
+// 정해 한 번에 보내는 화면을 붙였다. (docsPlan/폰-입금-나눠넣기/)
+let _splitAmt = {};      // fid → 통장에 찍힌 총액
+
+function depSplitOpen(fid, amount) {
+  const box = document.getElementById('depSplitBox_' + fid);
+  if (!box) return;
+  if (box.style.display === 'block') { box.style.display = 'none'; return; }
+  _splitAmt[fid] = Number(amount) || 0;
+  const list = [..._coreTenants].sort((a, b) => String(a.room).localeCompare(String(b.room)));
+  box.innerHTML = `
+    <div style="font-size:12px;font-weight:700;margin-bottom:6px">호실을 고르고 금액을 나눠 적으세요</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+      <button onclick="depSplitAuto('${fid}','deposit')" style="flex:1;min-width:92px;padding:8px;background:none;border:1.5px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">보증금으로 채우기</button>
+      <button onclick="depSplitAuto('${fid}','rent')" style="flex:1;min-width:92px;padding:8px;background:none;border:1.5px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">월세로 채우기</button>
+      <button onclick="depSplitAuto('${fid}','even')" style="flex:1;min-width:92px;padding:8px;background:none;border:1.5px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">똑같이 나누기</button>
+    </div>
+    <div style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)">
+      ${list.map(t => `
+        <label style="display:flex;gap:6px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px">
+          <input type="checkbox" class="spRoom_${fid}" value="${nbEsc(t.room)}" onchange="depSplitSum('${fid}')" style="width:18px;height:18px">
+          <span style="flex:1;min-width:0"><b>${nbEsc(t.room)}</b> <span style="color:var(--text3);font-size:11px">${nbEsc(t.name || '')}</span></span>
+          <input type="number" class="spAmt_${fid}" data-room="${nbEsc(t.room)}" placeholder="0" oninput="depSplitSum('${fid}')"
+            style="width:96px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right">
+          <select class="spKind_${fid}" data-room="${nbEsc(t.room)}" style="padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface)">
+            <option value="rent">월세</option>
+            <option value="deposit">보증금</option>
+          </select>
+        </label>`).join('')}
+    </div>
+    <div id="spSum_${fid}" style="font-size:12px;margin:8px 0;text-align:right"></div>
+    <button id="spGo_${fid}" onclick="depSplitApprove('${fid}')" disabled
+      style="width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;opacity:.45">
+      나눠서 입금 확인
+    </button>`;
+  box.style.display = 'block';
+  depSplitSum(fid);
+}
+
+// 고른 호실에 등록된 보증금·월세를 그대로 채워 넣는다 (똑같이 나누기는 총액 ÷ 호실 수)
+function depSplitAuto(fid, mode) {
+  const boxes = [...document.querySelectorAll('.spRoom_' + fid)].filter(c => c.checked);
+  if (!boxes.length) { alert('먼저 호실을 골라주세요'); return; }
+  const rooms = boxes.map(c => c.value);
+  const even = mode === 'even' ? Math.round(_splitAmt[fid] / rooms.length) : 0;
+  rooms.forEach(room => {
+    const t = _coreTenants.find(x => x.room === room) || {};
+    const amtEl = document.querySelector('.spAmt_' + fid + '[data-room="' + room + '"]');
+    const kdEl  = document.querySelector('.spKind_' + fid + '[data-room="' + room + '"]');
+    if (mode === 'deposit') { amtEl.value = Number(t.deposit || 0) || ''; kdEl.value = 'deposit'; }
+    else if (mode === 'rent') { amtEl.value = Number(t.rent || 0) || ''; kdEl.value = 'rent'; }
+    else { amtEl.value = even; }
+  });
+  depSplitSum(fid);
+}
+
+// 합계와 차액을 보여주고, 딱 맞을 때만 확인 버튼을 열어 준다
+function depSplitSum(fid) {
+  const rows = depSplitRows(fid);
+  const sum = rows.reduce((s, r) => s + r.amount, 0);
+  const diff = _splitAmt[fid] - sum;
+  const el = document.getElementById('spSum_' + fid);
+  const go = document.getElementById('spGo_' + fid);
+  if (!el || !go) return;
+  const ok = rows.length > 0 && diff === 0;
+  el.innerHTML = `나눈 합계 <b>${fmt(sum)}</b> / 통장 <b>${fmt(_splitAmt[fid])}</b>` +
+    (diff === 0 ? ` <span style="color:var(--green);font-weight:700">✓ 맞음</span>`
+                : ` <span style="color:var(--red);font-weight:700">${diff > 0 ? fmt(diff) + ' 모자람' : fmt(-diff) + ' 넘음'}</span>`);
+  go.disabled = !ok;
+  go.style.opacity = ok ? '1' : '.45';
+}
+
+function depSplitRows(fid) {
+  const out = [];
+  document.querySelectorAll('.spRoom_' + fid).forEach(c => {
+    if (!c.checked) return;
+    const room = c.value;
+    const amt = Number((document.querySelector('.spAmt_' + fid + '[data-room="' + room + '"]') || {}).value || 0);
+    const kind = (document.querySelector('.spKind_' + fid + '[data-room="' + room + '"]') || {}).value || 'rent';
+    if (amt > 0) out.push({ room, amount: amt, kind });
+  });
+  return out;
+}
+
+async function depSplitApprove(fid) {
+  const d = _inboxDocs.find(x => x.fid === fid);
+  if (!d) return;
+  const p = parseDepositSms(d.raw);
+  if (!p) return;
+  const rows = depSplitRows(fid);
+  const sum = rows.reduce((s, r) => s + r.amount, 0);
+  if (!rows.length || sum !== Number(p.amount)) { alert('나눈 금액 합계가 통장 금액과 달라 넘길 수 없습니다.'); return; }
+  const txt = rows.map(r => `${r.room}호 ${fmt(r.amount)} (${r.kind === 'deposit' ? '보증금' : '월세'})`).join('\n');
+  if (!confirm(`${fmt(p.amount)} 을 이렇게 나눠 넣을까요?\n\n${txt}\n\n(노트북 앱이 열릴 때 반영됩니다)`)) return;
+  try {
+    await db.collection('deposit_inbox').doc(fid).set({
+      status: 'approved',
+      splits: rows.map(r => ({ ...r, tenantName: (_coreTenants.find(x => x.room === r.room) || {}).name || '' })),
+      room: rows[0].room,                       // 옛 화면 호환 — 대표 호실
+      tenantName: (_coreTenants.find(x => x.room === rows[0].room) || {}).name || '',
+      amount: p.amount, date: p.date || new Date().toISOString().slice(0, 10),
+      sender: p.sender || '', approvedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  } catch (e) { alert('처리 실패: ' + e.message); }
+}
+
 async function depApprove(fid) {
   const d = _inboxDocs.find(x => x.fid === fid);
   if (!d) return;
@@ -1820,10 +1937,14 @@ async function depApprove(fid) {
   const room = sel ? sel.value : '';
   if (!room) { alert('호실을 선택해주세요'); return; }
   const t = _coreTenants.find(x => x.room === room);
-  if (!confirm(`${room}호 ${t ? t.name : ''}\n${fmt(p.amount)} 입금 처리할까요?\n\n(노트북 앱이 열릴 때 납부 기록에 자동 반영됩니다)`)) return;
+  const _kEl = document.getElementById('depKind_' + fid);
+  const _kTxt = (_kEl && _kEl.value === 'deposit') ? '보증금·계약금' : '월세';
+  if (!confirm(`${room}호 ${t ? t.name : ''}\n${fmt(p.amount)} 을 ${_kTxt} 로 처리할까요?\n\n(노트북 앱이 열릴 때 자동 반영됩니다)`)) return;
   try {
+    const kindEl = document.getElementById('depKind_' + fid);
+    const kind = kindEl ? kindEl.value : 'rent';
     await db.collection('deposit_inbox').doc(fid).set({
-      status: 'approved', room, tenantName: t ? (t.name || '') : '',
+      status: 'approved', room, tenantName: t ? (t.name || '') : '', kind,
       amount: p.amount, date: p.date || new Date().toISOString().slice(0, 10),
       sender: p.sender || '', approvedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
