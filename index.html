@@ -1808,6 +1808,9 @@ function renderDeposits() {
     const amt = x.amount ? fmt(x.amount) : (x.p ? fmt(x.p.amount) : '-');
     const sender = x.sender || (x.p && x.p.sender) || '';
     const dt = x.date || (x.p && x.p.date) || '';
+    const splitTxt = Array.isArray(x.splits) && x.splits.length
+      ? x.splits.map(sp => `${nbEsc(sp.room)}호 ${fmt(sp.amount)}${sp.kind === 'deposit' ? '(보증금)' : ''}`).join(' · ')
+      : '';
     return `<div class="req-card" style="opacity:.75;padding:10px 12px">
       <div class="req-top" style="margin-bottom:0">
         ${x.room ? `<span class="req-room">${nbEsc(x.room)}</span>` : ''}
@@ -1816,6 +1819,8 @@ function renderDeposits() {
         <span class="badge ${cls}">${txt}</span>
         <span class="req-date">${dt}</span>
       </div>
+      ${splitTxt ? `<div style="font-size:11px;color:var(--text3);margin-top:5px">나눠 넣음 — ${splitTxt}</div>` : ''}
+      <button onclick="depRestore('${x.fid}')" style="margin-top:7px;padding:6px 10px;background:none;color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">↩ 다시 처리</button>
     </div>`;
   }).join('') : '<div class="empty">처리된 내역이 없습니다</div>';
 }
@@ -1949,6 +1954,36 @@ async function depApprove(fid) {
       sender: p.sender || '', approvedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
   } catch (e) { alert('처리 실패: ' + e.message); }
+}
+
+// 처리 끝난 입금을 「확인 대기」로 되돌린다 (2026-08-31)
+// 호실을 잘못 골라 승인했거나, 나눠 넣기를 다시 하고 싶을 때 쓴다.
+// ★ 노트북에 이미 들어간 기록은 여기서 지워지지 않는다 — 먼저 노트북에서 지워야
+//   같은 돈이 두 번 잡히지 않는다. 그래서 누를 때 그 사실을 먼저 알린다.
+// ★ 예전에 보낸 나눔 정보(splits)·호실·종류를 깨끗이 지운다. 남겨 두면 다음에
+//   나누지 않고 승인해도 옛 나눔대로 처리된다.
+async function depRestore(fid) {
+  const d = _inboxDocs.find(x => x.fid === fid);
+  if (!d) return;
+  if (!d.raw) { alert('원래 입금 문자가 남아 있지 않아 되돌릴 수 없습니다.'); return; }
+  const was = Array.isArray(d.splits) && d.splits.length
+    ? d.splits.map(sp => `${sp.room}호 ${fmt(sp.amount)}`).join('\n')
+    : `${d.room || '?'}호 ${fmt(d.amount || 0)}`;
+  if (!confirm(
+      '이 입금을 「확인 대기」로 되돌립니다.\n\n' +
+      '먼저 처리했던 내용\n' + was + '\n\n' +
+      '⚠️ 노트북 앱에 이미 들어간 입금 기록은 지워지지 않습니다.\n' +
+      '노트북에서 먼저 지우고 되돌리세요. 안 그러면 같은 돈이 두 번 잡힙니다.\n\n' +
+      '되돌릴까요?')) return;
+  try {
+    const del = firebase.firestore.FieldValue.delete();
+    await db.collection('deposit_inbox').doc(fid).update({
+      status: 'pending',
+      splits: del, room: del, kind: del, tenantName: del,
+      amount: del, date: del, sender: del, approvedAt: del, importedAt: del,
+      restoredAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) { alert('되돌리기 실패: ' + e.message); }
 }
 
 async function depIgnore(fid) {
