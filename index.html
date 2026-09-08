@@ -1182,7 +1182,10 @@ async function savePhoneSchedule() {
 // ===== 계약금 받음 (폰 → 노트북) =====
 // 요청·일정과 같은 통로(phone_requests)로 보내되 kind:'contract' 를 붙인다.
 // 새 통로를 파면 Firebase 보안규칙을 다시 게시해야 해서 이미 열린 길을 쓴다.
-function openContractForm(room){
+// prefill = 입금함에서 넘어올 때만 씀: {amount, date, name, fid}
+// fid 가 있으면 저장 성공 시 그 입금함 카드를 무시 처리해 이중 기록을 막는다 (depToContract 참고)
+let _ctFromDeposit = null;
+function openContractForm(room, prefill){
   document.getElementById('roomModal').classList.remove('open');
   const sel = document.getElementById('ctRoom');
   // 공실만 고를 수 있게 한다. 이미 사람이 있는 방에 또 만들면 겹친다.
@@ -1190,10 +1193,19 @@ function openContractForm(room){
   sel.innerHTML = vacants.map(r => `<option value="${r.room}">${r.room}</option>`).join('')
     || '<option value="">공실이 없습니다</option>';
   if(room) sel.value = room;
-  document.getElementById('ctName').value = '';
-  document.getElementById('ctAmount').value = '';
-  document.getElementById('ctDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('ctName').value = (prefill && prefill.name) || '';
+  document.getElementById('ctAmount').value = (prefill && prefill.amount) || '';
+  document.getElementById('ctDate').value = (prefill && prefill.date) || new Date().toISOString().slice(0,10);
+  _ctFromDeposit = (prefill && prefill.fid) || null;
   document.getElementById('contractFormModal').classList.add('open'); autoGrowIn();
+}
+// 입금함 카드에서 "새 세입자(계약중)로 등록" 눌렀을 때 — 감지된 금액·날짜·이름을 미리 채워 연다.
+function depToContract(fid){
+  const d = _inboxDocs.find(x => x.fid === fid);
+  if (!d) return;
+  const p = parseDepositSms(d.raw);
+  if (!p) { alert('이 알림은 금액을 읽지 못해 계약중 등록에 쓸 수 없습니다.'); return; }
+  openContractForm(null, { amount: p.amount, date: p.date, name: p.sender, fid });
 }
 
 async function savePhoneContract(){
@@ -1215,6 +1227,14 @@ async function savePhoneContract(){
       id, kind:'contract', room, name, amount, date, synced:false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    // 입금함 카드에서 시작한 경우 — 그 알림은 이걸로 처리된 것이니 "무시"로 돌려서
+    // 나중에 자동감지 쪽에서 또 한 번 잡혀 돈이 두 번 기록되는 걸 막는다.
+    if (_ctFromDeposit) {
+      db.collection('deposit_inbox').doc(_ctFromDeposit)
+        .set({ status: 'ignored', note: `${room}호 신규 계약중 등록으로 처리됨` }, { merge: true })
+        .catch(()=>{});
+      _ctFromDeposit = null;
+    }
     // 노트북이 처리하기 전에도 화면에는 바로 보이게 한다(요청·일정과 같은 방식).
     // 노트북이 받아 올리면 진짜 값으로 덮인다.
     if (_data && Array.isArray(_data.rooms)) {
@@ -1798,6 +1818,7 @@ function renderDeposits() {
         <button onclick="depIgnore('${x.fid}')" style="flex:1;padding:12px;background:none;color:var(--text2);border:1.5px solid var(--border);border-radius:10px;font-size:14px;cursor:pointer">무시</button>
       </div>
       <button onclick="depSplitOpen('${x.fid}', ${x.p.amount})" style="width:100%;margin-top:8px;padding:11px;background:none;color:var(--blue);border:1.5px dashed var(--blue);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">🔀 여러 호실에 나눠 넣기</button>
+      <button onclick="depToContract('${x.fid}')" style="width:100%;margin-top:8px;padding:11px;background:none;color:#c2410c;border:1.5px dashed #c2410c;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">📋 새 세입자(계약중)로 등록</button>
       <div id="depSplitBox_${x.fid}" style="display:none;margin-top:10px;padding:10px;background:var(--bg);border-radius:10px"></div>
     </div>`;
   }).join('') : '<div class="empty">확인 대기 중인 입금이 없습니다</div>';
