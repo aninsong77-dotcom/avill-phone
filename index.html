@@ -780,14 +780,20 @@ function openRoom(room) {
   const todaySt = new Date().toISOString().slice(0, 10);
   const fmtMD   = s => { if(!s) return '-'; const p=s.split('-'); return `${+p[1]}.${+p[2]}`; };
   const todayDay = parseInt(todaySt.slice(8));
+  // 지금 미납으로 세는 회차인가 — PC 가 보낸 c.due(납부일 다음 날부터) 를 쓴다.
+  // 옛 PC 가 보낸 자료(c.due 없음)는 예전 식으로 판단한다.
+  const isDue = c => {
+    if (typeof c.due === 'boolean') return c.due;
+    if (c.start > todaySt) return false;
+    const isCur = c.end >= todaySt;
+    if (isCur && todayDay < parseInt(c.start.slice(8))) return false;
+    return true;
+  };
   const cycleRows = cycles.map((c, i) => {
-    const isFuture   = c.start > todaySt;
-    const isCurrent  = c.end >= todaySt;
-    const notYetDue  = isCurrent && todayDay < parseInt(c.start.slice(8));
     let stTxt, rowBg = '';
     if      (c.paid && c.late)          { stTxt = `<span style="color:#c98a00;font-weight:700">✓</span>`;      rowBg = '#fff8e1'; }
     else if (c.paid)                    { stTxt = `<span style="color:var(--green);font-weight:700">✓</span>`;   rowBg = 'var(--green-bg)'; }
-    else if (isFuture || notYetDue)     { stTxt = `<span style="color:var(--text3)">⋯</span>`; }
+    else if (!isDue(c))                 { stTxt = `<span style="color:var(--text3)">⋯</span>`; }
     else if (c.collected > 0)           { stTxt = `<span style="color:var(--amber);font-weight:700">△</span>`;   rowBg = 'var(--amber-bg)'; }
     else                                { stTxt = `<span style="color:var(--red);font-weight:700">✗</span>`;     rowBg = 'var(--red-bg)'; }
     return `<tr style="background:${rowBg};border-top:1px solid var(--border)">
@@ -857,12 +863,6 @@ function openRoom(room) {
     </details>` : '';
 
   // ── 회차 슬롯 도트 ──
-  const isDue = c => {
-    if (c.start > todaySt) return false;
-    const isCur = c.end >= todaySt;
-    if (isCur && todayDay < parseInt(c.start.slice(8))) return false;
-    return true;
-  };
   const dotsHtml = cycles.length && d.status !== 'free' ? (() => {
     const unpaidTotal = cycles.filter(c=>isDue(c)&&c.shortage>0).length;
     let h = `<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:14px">
