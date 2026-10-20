@@ -65,7 +65,7 @@ body{
 .sc .lbl{font-size:12px;color:var(--text2);font-weight:700}
 .sc .val{font-size:30px;font-weight:900;margin-top:6px;color:var(--accent);letter-spacing:-.5px}
 .sc .val .u{font-size:13px;font-weight:700;color:var(--text3);margin-left:2px}
-.sc.r{--accent:var(--g-now)} .sc.b{--accent:var(--g-blue)}
+.sc.r{--accent:var(--g-now)} .sc.b{--accent:var(--g-blue)} .sc.c{--accent:#777}
 
 /* ── 섹션 제목 ── */
 .sec-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800;margin:30px 4px 14px}
@@ -92,6 +92,9 @@ body{
 }
 @media(hover:hover){.rc:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(15,45,75,.12)}}
 .rc.move{border-top-style:dashed}
+/* 계약중 — 계약금은 받았지만 계약이 깨질 수 있어 지우지 않고 흐리게 남긴다 */
+.rc.contract{opacity:.6}
+.rc .tag.contract{background:#ececec;color:#555}
 .rc-head{display:flex;align-items:flex-start;gap:6px}
 .rc .room{font-size:19px;font-weight:900;letter-spacing:-.5px;min-width:0}
 .tag-row{display:flex;flex-direction:row;align-items:flex-start;gap:4px;margin-left:auto;flex:none}
@@ -357,7 +360,9 @@ function priceHtml(r){
 }
 
 function roomCard(r, kind){
-  const statusTag = kind==='now'
+  const statusTag = r.contract
+    ? '<span class="tag contract">계약<br>중</span>'
+    : kind==='now'
     ? '<span class="tag now">즉시<br>가능</span>'
     : '<span class="tag soon">퇴실<br>예정</span>';
   const cleanTag = r.clean
@@ -370,7 +375,7 @@ function roomCard(r, kind){
     ? `<button type="button" class="memo-btn" onclick="toggleMemo(this,event)" aria-label="메모 보기">N</button>
        <div class="memo-bubble">${esc(r.memo)}</div>`
     : '';
-  return `<div class="rc${kind==='soon'?' move':''}${r.memo?' has-memo':''}">
+  return `<div class="rc${kind==='soon'?' move':''}${r.contract?' contract':''}${r.memo?' has-memo':''}">
     ${memoHtml}
     <div class="rc-head">
       <div class="room">${esc(r.room)}</div>
@@ -404,16 +409,20 @@ function floorSectionsHtml(rooms, kind){
 function renderVacancy(vacant, moveOuts, updatedAt){
   document.getElementById('updated').textContent = updatedAt ? '최종 업데이트 '+fmtTime(updatedAt) : '';
 
+  // 계약중 방은 목록에 남기되(흐리게) 「즉시 가능」 숫자에는 세지 않는다
+  const nowCount = vacant.filter(r=>!r.contract).length;
+  const ctrCount = vacant.length - nowCount;
   document.getElementById('summary').innerHTML = [
-    ['즉시 가능', vacant.length, 'r'],
+    ['즉시 가능', nowCount, 'r'],
     ['퇴실 예정', moveOuts.length, 'b'],
+    ...(ctrCount ? [['계약중', ctrCount, 'c']] : []),
   ].map(([l,v,c])=>`<div class="sc ${c}"><div class="lbl">${l}</div><div class="val">${v}<span class="u">실</span></div></div>`).join('');
 
-  // 즉시 입주 가능
-  document.getElementById('cntNow').textContent = vacant.length ? `${vacant.length}실` : '';
+  // 즉시 입주 가능 (같은 층 안에서 계약중 방은 뒤로)
+  document.getElementById('cntNow').textContent = nowCount ? `${nowCount}실` : '';
   const nowEl = document.getElementById('nowList');
   nowEl.innerHTML = vacant.length
-    ? floorSectionsHtml(vacant.slice().sort((a,b)=>String(a.room).localeCompare(String(b.room))), 'now')
+    ? floorSectionsHtml(vacant.slice().sort((a,b)=>(a.contract?1:0)-(b.contract?1:0) || String(a.room).localeCompare(String(b.room))), 'now')
     : '<div class="empty"><svg class="ic" style="width:1.2em;height:1.2em"><use href="#ic-check"/></svg> 현재 즉시 입주 가능한 공실이 없습니다</div>';
 
   // 퇴실 예정
