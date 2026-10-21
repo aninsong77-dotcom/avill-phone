@@ -1359,6 +1359,13 @@ function renderRequests() {
     : `<div class="empty">${_schedFilter === '완료' ? '끝난 일정이 없습니다' : '일정이 없습니다'}</div>`;
 }
 
+// 월 임대료 안내 — 어느 세대에 보냈는지 이 폰에만 적어 둔다(달마다 따로). toggle 이면 켜고 끄기.
+function billMarkSent(key, room, at, toggle) {
+  let o = {}; try { o = JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch (e) {}
+  if (toggle && o[room] && (!at || o[room] === at)) delete o[room]; else o[room] = at || new Date().toISOString();
+  try { localStorage.setItem(key, JSON.stringify(o)); } catch (e) {}
+  setTimeout(renderNotice, toggle ? 0 : 800);   // 문자 앱으로 넘어간 뒤 돌아오면 「보냄」으로 보이게
+}
 // 문자앱을 열고 받는 사람·내용을 채워 준다. 보내기는 사용자가 직접 누른다.
 function sendSms(tel, id) {
   const el = document.getElementById(id);
@@ -1392,6 +1399,40 @@ function renderNotice() {
   const month = new Date().getMonth() + 1;
   const fmtN = n => Number(n||0).toLocaleString('ko-KR');
   let html = '';
+
+  // ── 0. 월 임대료 안내 (2026-10-21) — PC 가 만든 세대별 안내문. 미납 문자와 따로 온다(완납 세대도) ──
+  const bills = rooms.filter(r => r.bill && r.bill.text);
+  if (bills.length) {
+    const ym = bills[0].bill.ym || '';
+    const sentKey = 'bill_sent_' + ym;
+    let sent = {}; try { sent = JSON.parse(localStorage.getItem(sentKey) || '{}') || {}; } catch (e) {}
+    // 「보냄」은 그 문구(PC 가 올린 시각)에만 — PC 에서 고쳐 다시 올리면 다시 보내야 한다
+    const isSentR = r => !!sent[r.room] && (!r.bill.at || sent[r.room] === r.bill.at);
+    const done = bills.filter(isSentR).length;
+    html += `<div class="section-title" style="color:var(--blue)">📅 ${ym ? Number(ym.slice(5)) + '월 ' : ''}임대료 안내 <span style="font-size:12px;color:var(--text3);font-weight:600">${done}/${bills.length} 보냄</span></div>`;
+    html += bills.map(r => {
+      const mid = 'bill_' + r.room.replace(/[^a-zA-Z0-9]/g, '_');
+      const tel = (r.phone || '').replace(/[^0-9+]/g, '');
+      const isSent = isSentR(r);
+      const at = nbEsc(r.bill.at || '');
+      return `<div class="req-card" style="margin-bottom:10px;${isSent ? 'opacity:.55' : ''}">
+        <div class="req-top">
+          <span class="req-room">${nbEsc(r.room)}</span>
+          <span style="font-size:13px;font-weight:600">${nbEsc(r.tenantName || '')}</span>
+          ${isSent ? '<span class="badge bg">보냄</span>' : ''}
+        </div>
+        ${r.bill.stale ? '<div style="font-size:12px;color:var(--red);font-weight:700;margin-bottom:6px">⚠️ 올린 뒤 금액이 바뀌었습니다 — PC 에서 다시 올린 뒤 보내세요</div>' : ''}
+        ${r.bill.done ? '<div style="font-size:12px;color:var(--green);font-weight:700;margin-bottom:6px">✅ 올린 뒤 다 냈습니다 — 보내지 마세요</div>' : ''}
+        ${r.phone ? `<div style="font-size:12px;color:var(--text2);margin-bottom:6px">📞 ${nbEsc(r.phone)}</div>` : '<div style="font-size:12px;color:var(--red);margin-bottom:6px">번호 없음</div>'}
+        <textarea id="${mid}" readonly style="width:100%;font-size:12px;line-height:1.7;border:1px solid var(--border);border-radius:6px;padding:8px;background:#fff;color:var(--text);resize:none;height:150px">${String(r.bill.text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button onclick="copyMsg('${mid}')" style="flex:1;padding:9px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">📋 복사</button>
+          ${tel && !r.bill.done ? `<button onclick="sendSms('${tel}','${mid}');billMarkSent('${sentKey}','${nbEsc(r.room)}','${at}')" style="flex:2;padding:9px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">💬 문자 보내기</button>` : ''}
+          <button onclick="billMarkSent('${sentKey}','${nbEsc(r.room)}','${at}',true)" style="flex:1;padding:9px;background:none;color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">${isSent ? '되돌림' : '보냄 표시'}</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
 
   // ── 1. 미납/연체 문자 ──
   const overdue = rooms.filter(r => r.status === 'overdue' && r.tenantName && r.status !== 'free');
