@@ -1398,6 +1398,33 @@ async function shareNoticeImg(id) {
     viewNoticeImg(id);
   }
 }
+// 「문자로 보내기」 — 공유 창은 받는 사람을 못 정하고, sms: 주소는 사진을 못 붙인다.
+// 그래서 사진을 먼저 복사해 두고 → 세입자 번호가 든 문자 앱을 연다 → 입력칸을 길게 눌러 붙여넣기(사용자가 붙여넣기 되는 것 확인, 11-04).
+// 클립보드는 PNG 만 받아서 JPEG 를 PNG 로 바꿔 넣는다. 복사가 안 되는 폰이면 공유 창으로 넘긴다.
+function _nimgPng(id) {
+  return new Promise((ok, no) => {
+    const im = new Image();
+    im.onload = () => { const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+      c.getContext('2d').drawImage(im, 0, 0); c.toBlob(b => b ? ok(b) : no(new Error('png')), 'image/png'); };
+    im.onerror = () => no(new Error('img'));
+    im.src = _noticeImgs[id].img;
+  });
+}
+async function smsNoticeImg(id, tel) {
+  const x = _noticeImgs[id];
+  if (!x) { alert('사진이 없습니다. PC 에서 다시 보내 주세요.'); return; }
+  if (!tel) { shareNoticeImg(id); return; }
+  try {
+    if (!navigator.clipboard || !window.ClipboardItem) throw new Error('no clipboard');
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': _nimgPng(id) })]);
+  } catch (e) {
+    alert('이 폰에서는 사진 복사가 안 됩니다. 공유 창에서 보내 주세요.');
+    shareNoticeImg(id); return;
+  }
+  alert('사진을 복사했습니다.\n문자 앱이 열리면 입력칸을 길게 눌러 「붙여넣기」 하세요.');
+  billMarkSent('nimg_sent', x.room, x.at);
+  location.href = 'sms:' + tel;
+}
 function viewNoticeImg(id) {
   const x = _noticeImgs[id]; if (!x) return;
   const box = document.createElement('div');
@@ -1469,7 +1496,8 @@ function renderNotice() {
         <div style="font-size:12px;color:var(--text2);margin-bottom:6px">총 ${fmtN(x.total)}원 · ${nbEsc(atTxt)}${r.phone ? ` · 📞 ${nbEsc(r.phone)}` : ''}</div>
         <img src="${x.img}" onclick="viewNoticeImg('${qid}')" style="width:100%;max-height:220px;object-fit:cover;object-position:top;border:1px solid var(--border);border-radius:6px;display:block;cursor:pointer;background:#fff">
         <div style="display:flex;gap:6px;margin-top:6px">
-          ${moved ? '' : `<button onclick="shareNoticeImg('${qid}')" style="flex:2;padding:9px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">💬 문자로 보내기</button>`}
+          ${moved ? '' : `<button onclick="smsNoticeImg('${qid}','${(r.phone || '').replace(/[^0-9+]/g, '')}')" style="flex:2;padding:9px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">💬 문자로 보내기</button>
+          <button onclick="shareNoticeImg('${qid}')" style="flex:1;padding:9px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">다른 앱으로</button>`}
           <button onclick="viewNoticeImg('${qid}')" style="flex:1;padding:9px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">크게 보기</button>
           <button onclick="deleteNoticeImg('${qid}')" style="flex:1;padding:9px;background:none;color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">지우기</button>
         </div>
