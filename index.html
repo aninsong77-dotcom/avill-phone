@@ -514,6 +514,7 @@ const FLOORS = [
 ];
 
 let _data = null;
+let _noticeImgs = {};   // 월세 납부 안내문 사진 { 문서id: { room, tid, name, img, at, total, asof } } (2026-11-04)
 let _reqFilter = '전체';
 let _editReqId = null;
 const fmt = n => Number(n||0).toLocaleString('ko-KR') + '원';
@@ -533,6 +534,15 @@ db.collection('building').doc('phone_data').onSnapshot(doc => {
 }, err => {
   document.getElementById('syncStatus').textContent = '연결 오류';
 });
+
+// 월세 납부 안내문 사진(2026-11-04) — PC 안내문 창 「폰으로 사진 보내기」가 호실마다 따로 올린 문서(notice_img_호실)만 듣는다.
+// phone_data 와 따로 온다(사진을 거기 넣으면 1MB 한도를 넘어 동기화가 멈추므로).
+const _nimgId = firebase.firestore.FieldPath.documentId();
+db.collection('building').where(_nimgId, '>=', 'notice_img_').where(_nimgId, '<', 'notice_img_').onSnapshot(snap => {
+  _noticeImgs = {};
+  snap.forEach(d => { const x = d.data(); if (x && x.room && /^data:image\/jpeg;base64,/.test(x.img || '')) _noticeImgs[d.id] = x; });
+  renderNotice();
+}, err => {});
 
 db.collection('building').doc('cleaning').onSnapshot(doc => {
   if (!doc.exists || !_data) return;
@@ -1366,6 +1376,42 @@ function billMarkSent(key, room, at, toggle) {
   try { localStorage.setItem(key, JSON.stringify(o)); } catch (e) {}
   setTimeout(renderNotice, toggle ? 0 : 800);   // 문자 앱으로 넘어간 뒤 돌아오면 「보냄」으로 보이게
 }
+// ── 월세 납부 안내문 사진 (2026-11-04) ──
+function _nimgFile(id) {
+  const x = _noticeImgs[id]; if (!x) return null;
+  const b64 = x.img.split(',')[1] || '', bin = atob(b64), u = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return new File([u], `${String(x.room).replace(/[^0-9A-Za-z가-힣]/g, '')}호_월세안내.jpg`, { type: 'image/jpeg' });
+}
+// 폰의 공유 창으로 사진을 넘긴다 → 「메시지」를 고르면 사진이 붙은 문자 화면. 받는 사람은 거기서 고른다.
+// 공유가 안 되는 폰이면 사진을 크게 띄워 길게 눌러 저장하게.
+async function shareNoticeImg(id) {
+  const x = _noticeImgs[id], f = _nimgFile(id);
+  if (!x || !f) { alert('사진이 없습니다. PC 에서 다시 보내 주세요.'); return; }
+  if (navigator.canShare && navigator.canShare({ files: [f] })) {
+    try {
+      await navigator.share({ files: [f] });
+      billMarkSent('nimg_sent', x.room, x.at);
+    } catch (e) { if (e && e.name !== 'AbortError') { alert('공유 창을 열지 못했습니다. 사진을 길게 눌러 저장해 보내 주세요.'); viewNoticeImg(id); } }
+  } else {
+    alert('이 폰은 바로 공유가 안 됩니다. 사진을 길게 눌러 저장한 뒤 문자에 붙여 보내 주세요.');
+    viewNoticeImg(id);
+  }
+}
+function viewNoticeImg(id) {
+  const x = _noticeImgs[id]; if (!x) return;
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;overflow:auto;padding:12px';
+  box.innerHTML = `<div style="text-align:right;margin-bottom:8px"><button style="padding:8px 14px;border:none;border-radius:8px;font-size:14px;font-weight:700">닫기</button></div><img src="${x.img}" style="width:100%;display:block;border-radius:8px;background:#fff">`;
+  box.querySelector('button').onclick = () => box.remove();
+  document.body.appendChild(box);
+}
+async function deleteNoticeImg(id) {
+  const x = _noticeImgs[id]; if (!x) return;
+  if (!confirm(`${x.room}호 안내문 사진을 지울까요?\n(PC 에서 다시 보내면 또 생깁니다)`)) return;
+  try { await db.collection('building').doc(id).delete(); } catch (e) { alert('지우지 못했습니다. 인터넷을 확인해 주세요.'); }
+}
+
 // 문자앱을 열고 받는 사람·내용을 채워 준다. 보내기는 사용자가 직접 누른다.
 function sendSms(tel, id) {
   const el = document.getElementById(id);
@@ -1399,6 +1445,37 @@ function renderNotice() {
   const month = new Date().getMonth() + 1;
   const fmtN = n => Number(n||0).toLocaleString('ko-KR');
   let html = '';
+
+  // ── 00. 월세 납부 안내문 사진 (2026-11-04) — PC 안내문 창에서 「폰으로 사진 보내기」로 올린 것 ──
+  const nimgs = Object.keys(_noticeImgs).sort((a, b) => String(_noticeImgs[a].room).localeCompare(String(_noticeImgs[b].room), 'ko', { numeric: true }));
+  if (nimgs.length) {
+    let nsent = {}; try { nsent = JSON.parse(localStorage.getItem('nimg_sent') || '{}') || {}; } catch (e) {}
+    html += `<div class="section-title" style="color:var(--blue)">🧾 안내문 사진 <span style="font-size:12px;color:var(--text3);font-weight:600">${nimgs.length}장</span></div>`;
+    html += nimgs.map(id => {
+      const x = _noticeImgs[id];
+      const r = rooms.find(rr => rr.room === x.room) || {};
+      const isSent = !!nsent[x.room] && nsent[x.room] === x.at;
+      const moved = r.tenantName !== undefined && (r.tenantName || '') !== (x.name || '');
+      const at = x.at ? new Date(x.at) : null;
+      const atTxt = at && !isNaN(at) ? `${at.getMonth() + 1}/${at.getDate()} ${at.getHours()}:${String(at.getMinutes()).padStart(2, '0')} 올림` : '';
+      const qid = nbEsc(id);
+      return `<div class="req-card" style="margin-bottom:10px;${isSent ? 'opacity:.55' : ''}">
+        <div class="req-top">
+          <span class="req-room">${nbEsc(x.room)}</span>
+          <span style="font-size:13px;font-weight:600">${nbEsc(x.name || '')}</span>
+          ${isSent ? '<span class="badge bg">보냄</span>' : ''}
+        </div>
+        ${moved ? '<div style="font-size:12px;color:var(--red);font-weight:700;margin-bottom:6px">⚠️ 이 방 세입자가 바뀌었습니다 — 보내지 말고 지우세요</div>' : ''}
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">총 ${fmtN(x.total)}원 · ${nbEsc(atTxt)}${r.phone ? ` · 📞 ${nbEsc(r.phone)}` : ''}</div>
+        <img src="${x.img}" onclick="viewNoticeImg('${qid}')" style="width:100%;max-height:220px;object-fit:cover;object-position:top;border:1px solid var(--border);border-radius:6px;display:block;cursor:pointer;background:#fff">
+        <div style="display:flex;gap:6px;margin-top:6px">
+          ${moved ? '' : `<button onclick="shareNoticeImg('${qid}')" style="flex:2;padding:9px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">💬 문자로 보내기</button>`}
+          <button onclick="viewNoticeImg('${qid}')" style="flex:1;padding:9px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">크게 보기</button>
+          <button onclick="deleteNoticeImg('${qid}')" style="flex:1;padding:9px;background:none;color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">지우기</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
 
   // ── 0. 월 임대료 안내 (2026-10-21) — PC 가 만든 세대별 안내문. 미납 문자와 따로 온다(완납 세대도) ──
   const bills = rooms.filter(r => r.bill && r.bill.text);
