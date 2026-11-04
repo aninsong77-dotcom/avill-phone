@@ -1383,27 +1383,22 @@ function _nimgFile(id) {
   for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
   return new File([u], `${String(x.room).replace(/[^0-9A-Za-z가-힣]/g, '')}호_월세안내.jpg`, { type: 'image/jpeg' });
 }
-// 안내문 사진 보내기 — 공유 창은 받는 사람을 못 정하고, sms: 주소는 사진을 못 붙인다. 그래서 두 번 누른다.
-//  ① 「사진 복사」= 공유 창 → 사용자가 「이미지 복사」(이 길로 붙여넣기가 되는 것 사용자 확인, 11-04)
-//  ② 「문자 열기」= 세입자 번호가 든 문자 앱 → 입력칸 길게 눌러 붙여넣기
-// ※ 앱이 직접 클립보드에 넣는 방식(clipboard.write)은 문자 앱에 content:// 주소 글자로 붙어서 버렸다(사용자 실측).
-// 공유 창에서 「메시지」 · 카톡을 바로 골라도 된다(받는 사람은 거기서 고름). 공유가 안 되는 폰이면 사진을 크게 띄워 길게 눌러 저장하게.
-async function shareNoticeImg(id) {
+// 안내문 사진 「문자로 보내기」 — 세입자 번호를 복사해 두고 공유 창을 연다 → 「메시지」(사진 붙음) → 받는 사람 칸에 번호 붙여넣기.
+// 공유 창은 받는 사람을 못 정하고, sms: 주소는 사진을 못 붙인다(폰 · 브라우저 한계).
+// ※ 사진을 클립보드로 복사해 붙이는 방식은 버렸다 — 앱 복사 · 크롬 「이미지 복사」 둘 다 문자 앱에 content:// 주소 글자로 붙음(사용자 실측 11-04).
+// 공유가 안 되는 폰이면 사진을 크게 띄워 길게 눌러 저장하게.
+async function shareNoticeImg(id, tel) {
   const x = _noticeImgs[id], f = _nimgFile(id);
   if (!x || !f) { alert('사진이 없습니다. PC 에서 다시 보내 주세요.'); return; }
+  // 번호 복사는 기다리지 않는다 — 공유 창은 누른 직후에만 열 수 있어서
+  if (tel && navigator.clipboard) navigator.clipboard.writeText(tel).catch(() => {});
   if (navigator.canShare && navigator.canShare({ files: [f] })) {
-    try { await navigator.share({ files: [f] }); }
+    try { await navigator.share({ files: [f] }); billMarkSent('nimg_sent', x.room, x.at); }
     catch (e) { if (e && e.name !== 'AbortError') { alert('공유 창을 열지 못했습니다. 사진을 길게 눌러 저장해 보내 주세요.'); viewNoticeImg(id); } }
   } else {
     alert('이 폰은 바로 공유가 안 됩니다. 사진을 길게 눌러 저장한 뒤 문자에 붙여 보내 주세요.');
     viewNoticeImg(id);
   }
-}
-function smsOpenNotice(id, tel) {
-  const x = _noticeImgs[id];
-  if (!x || !tel) return;
-  billMarkSent('nimg_sent', x.room, x.at);
-  location.href = 'sms:' + tel;
 }
 function viewNoticeImg(id) {
   const x = _noticeImgs[id]; if (!x) return;
@@ -1475,11 +1470,10 @@ function renderNotice() {
         </div>
         ${moved ? '<div style="font-size:12px;color:var(--red);font-weight:700;margin-bottom:6px">⚠️ 이 방 세입자가 바뀌었습니다 — 보내지 말고 지우세요</div>' : ''}
         <div style="font-size:12px;color:var(--text2);margin-bottom:6px">총 ${fmtN(x.total)}원 · ${nbEsc(atTxt)}${r.phone ? ` · 📞 ${nbEsc(r.phone)}` : ''}</div>
-        ${moved ? '' : `<div style="font-size:12px;color:var(--text2);margin-bottom:6px;line-height:1.6">① 사진 복사 → 공유 창에서 <b>「이미지 복사」</b><br>② 문자 열기 → 입력칸을 길게 눌러 <b>붙여넣기</b></div>`}
+        ${moved ? '' : `<div style="font-size:12px;color:var(--text2);margin-bottom:6px;line-height:1.6">${tel ? '문자로 보내기 → 공유 창에서 <b>「메시지」</b> → 받는 사람 칸을 길게 눌러 <b>붙여넣기</b>(번호가 복사돼 있음)' : '번호가 없습니다 — 공유 창에서 받는 사람을 직접 고르세요'}</div>`}
         <img src="${x.img}" onclick="viewNoticeImg('${qid}')" style="width:100%;max-height:220px;object-fit:cover;object-position:top;border:1px solid var(--border);border-radius:6px;display:block;cursor:pointer;background:#fff">
         <div style="display:flex;gap:6px;margin-top:6px">
-          ${moved ? '' : `<button onclick="shareNoticeImg('${qid}')" style="flex:1.3;padding:9px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">① 사진 복사</button>
-          ${tel ? `<button onclick="smsOpenNotice('${qid}','${tel}')" style="flex:1.3;padding:9px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">② 문자 열기</button>` : ''}`}
+          ${moved ? '' : `<button onclick="shareNoticeImg('${qid}','${tel}')" style="flex:2;padding:9px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">💬 문자로 보내기</button>`}
           <button onclick="viewNoticeImg('${qid}')" style="flex:1;padding:9px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">크게 보기</button>
           <button onclick="deleteNoticeImg('${qid}')" style="flex:1;padding:9px;background:none;color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">지우기</button>
         </div>
