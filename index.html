@@ -1414,6 +1414,49 @@ async function deleteNoticeImg(id) {
   try { await db.collection('building').doc(id).delete(); } catch (e) { alert('지우지 못했습니다. 인터넷을 확인해 주세요.'); }
 }
 
+// 문자 나누기(2026-11-13) — 긴 안내 글을 문자 여러 통으로. 장문 문자 한 통 한도는 보통 2000바이트라 여유 있게 1800바이트로 자른다.
+// 바이트 = 한글 · 기호 2, 영문 · 숫자 · 줄바꿈 1. 자르는 자리: 빈 줄로 나뉜 덩어리 사이 → 넘치면 줄 사이 → 그래도 넘치면 글자 단위.
+// 여러 통이면 맨 위에 (1/2) 번호. ★PC 앱(building_v12)에 같은 함수가 한 벌 더 있다 — 고치면 둘 다 고칠 것.
+const SMS_LIMIT = 1800;
+function smsBytes(s){ let b = 0; for (const ch of String(s)) b += ch.charCodeAt(0) <= 0x7f ? 1 : 2; return b; }
+function smsSplit(text, limit){
+  limit = limit || SMS_LIMIT;
+  text = String(text || '').replace(/\r\n/g, '\n').trim();
+  if (smsBytes(text) <= limit) return [text];
+  const room = limit - 12;   // (1/3) 번호 줄 자리
+  // 조각 = { t: 글, sep: 앞 조각과 이을 때 사이에 넣을 것 }. 줄 하나가 한 통보다 길면 글자 단위로 자른다.
+  const addLine = (ln, sep, out) => {
+    if (smsBytes(ln) <= room) { out.push({ t: ln, sep }); return; }
+    let buf = '', first = true;
+    for (const ch of ln) {
+      if (smsBytes(buf + ch) > room) { out.push({ t: buf, sep: first ? sep : '' }); buf = ''; first = false; }
+      buf += ch;
+    }
+    if (buf) out.push({ t: buf, sep: first ? sep : '' });
+  };
+  const byBlock = [], byLine = [];   // 덩어리 단위 / 줄 단위
+  text.split(/\n{2,}/).forEach(blk => {
+    const lines = blk.split('\n');
+    lines.forEach((ln, i) => addLine(ln, i === 0 ? '\n\n' : '\n', byLine));
+    if (smsBytes(blk) <= room) byBlock.push({ t: blk, sep: '\n\n' });
+    else lines.forEach((ln, i) => addLine(ln, i === 0 ? '\n\n' : '\n', byBlock));
+  });
+  const pack = pieces => {
+    const out = []; let cur = '';
+    pieces.forEach(p => {
+      const cand = cur ? cur + p.sep + p.t : p.t;
+      if (smsBytes(cand) <= room) cur = cand;
+      else { if (cur) out.push(cur); cur = p.t; }
+    });
+    if (cur) out.push(cur);
+    return out;
+  };
+  // 덩어리 사이로 자르는 게 먼저. 다만 그러면 통 수가 늘어날 때만 줄 사이로 자른다(미납 20달: 3통 → 2통).
+  const a = pack(byBlock), b = pack(byLine);
+  const parts = b.length < a.length ? b : a;
+  return parts.map((x, i) => `(${i + 1}/${parts.length})\n` + x);
+}
+
 // 문자앱을 열고 받는 사람·내용을 채워 준다. 보내기는 사용자가 직접 누른다.
 function sendSms(tel, id) {
   const el = document.getElementById(id);
@@ -1505,10 +1548,22 @@ function renderNotice() {
         ${r.bill.stale ? '<div style="font-size:12px;color:var(--red);font-weight:700;margin-bottom:6px">⚠️ 올린 뒤 금액이 바뀌었습니다 — PC 에서 다시 올린 뒤 보내세요</div>' : ''}
         ${r.bill.done ? '<div style="font-size:12px;color:var(--green);font-weight:700;margin-bottom:6px">✅ 올린 뒤 다 냈습니다 — 보내지 마세요</div>' : ''}
         ${r.phone ? `<div style="font-size:12px;color:var(--text2);margin-bottom:6px">📞 ${nbEsc(r.phone)}</div>` : '<div style="font-size:12px;color:var(--red);margin-bottom:6px">번호 없음</div>'}
-        <textarea id="${mid}" readonly style="width:100%;font-size:12px;line-height:1.7;border:1px solid var(--border);border-radius:6px;padding:8px;background:#fff;color:var(--text);resize:none;height:150px">${String(r.bill.text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+        ${(() => {
+          // 글이 문자 한 통(1800바이트)을 넘으면 여러 칸으로 나눠 칸마다 복사 · 보내기(2026-11-13). 마지막 통을 보내면 「보냄」.
+          const parts = smsSplit(r.bill.text), n = parts.length;
+          return (n > 1 ? `<div style="font-size:12px;color:var(--blue);font-weight:700;margin-bottom:6px">글이 길어 문자 ${n}통으로 나눴습니다 — 1번부터 차례로 보내세요</div>` : '')
+            + parts.map((p, i) => {
+              const pid = n > 1 ? `${mid}_${i + 1}` : mid, last = i === n - 1;
+              const no = n > 1 ? `${i + 1}번 ` : '';
+              return `${n > 1 ? `<div style="font-size:12px;font-weight:700;margin:${i ? 10 : 0}px 0 4px">${i + 1}번째 문자 <span style="color:var(--text3);font-weight:600">${smsBytes(p)}/${SMS_LIMIT}바이트</span></div>` : ''}
+        <textarea id="${pid}" readonly style="width:100%;font-size:12px;line-height:1.7;border:1px solid var(--border);border-radius:6px;padding:8px;background:#fff;color:var(--text);resize:none;height:150px">${String(p).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
         <div style="display:flex;gap:6px;margin-top:6px">
-          <button onclick="copyMsg('${mid}')" style="flex:1;padding:9px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">📋 복사</button>
-          ${tel && !r.bill.done ? `<button onclick="sendSms('${tel}','${mid}');billMarkSent('${sentKey}','${nbEsc(r.room)}','${at}')" style="flex:2;padding:9px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">💬 문자 보내기</button>` : ''}
+          <button onclick="copyMsg('${pid}')" style="flex:1;padding:9px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">📋 ${no}복사</button>
+          ${tel && !r.bill.done ? `<button onclick="sendSms('${tel}','${pid}')${last ? `;billMarkSent('${sentKey}','${nbEsc(r.room)}','${at}')` : ''}" style="flex:2;padding:9px;background:#15224a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">💬 ${no}문자 보내기</button>` : ''}
+        </div>`;
+            }).join('');
+        })()}
+        <div style="display:flex;margin-top:6px">
           <button onclick="billMarkSent('${sentKey}','${nbEsc(r.room)}','${at}',true)" style="flex:1;padding:9px;background:none;color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">${isSent ? '되돌림' : '보냄 표시'}</button>
         </div>
       </div>`;
